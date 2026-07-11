@@ -20,18 +20,27 @@ def home():
 @app.route("/search/games")
 def search_games():
     query = request.args.get("q", "").strip()
+    genre = request.args.get("genre", "").strip()   # e.g. "action", "rpg"
+    year = request.args.get("year", "").strip()      # e.g. "2020"
     if not query:
         return jsonify([])
+
+    params = {"key": RAWG_API_KEY, "search": query, "page_size": 12}
+    if genre:
+        params["genres"] = genre
+    if year:
+        params["dates"] = f"{year}-01-01,{year}-12-31"
 
     try:
         resp = requests.get(
             f"{RAWG_BASE_URL}/games",
-            params={"key": RAWG_API_KEY, "search": query, "page_size": 12},
+            params=params,
             timeout=8,
         )
         resp.raise_for_status()
         data = resp.json()
-    except requests.RequestException:
+    except requests.RequestException as e:
+        print("RAWG ERROR:", repr(e))
         return jsonify({"error": "Could not reach RAWG API"}), 502
 
     results = []
@@ -47,16 +56,32 @@ def search_games():
     return jsonify(results)
 
 
+ANIME_GENRE_IDS = {
+    "action": 1, "adventure": 2, "comedy": 4, "drama": 8,
+    "fantasy": 10, "horror": 14, "mystery": 7, "romance": 22,
+    "sci-fi": 24, "slice of life": 36, "sports": 30, "supernatural": 37,
+}
+
+
 @app.route("/search/anime")
 def search_anime():
     query = request.args.get("q", "").strip()
+    genre = request.args.get("genre", "").strip().lower()
+    year = request.args.get("year", "").strip()
     if not query:
         return jsonify([])
+
+    params = {"q": query, "limit": 12}
+    if genre in ANIME_GENRE_IDS:
+        params["genres"] = ANIME_GENRE_IDS[genre]
+    if year:
+        params["start_date"] = f"{year}-01-01"
+        params["end_date"] = f"{year}-12-31"
 
     try:
         resp = requests.get(
             f"{JIKAN_BASE_URL}/anime",
-            params={"q": query, "limit": 12},
+            params=params,
             timeout=8,
         )
         resp.raise_for_status()
