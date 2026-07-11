@@ -1,10 +1,32 @@
 let currentMode = "games";
 
+const GENRES = {
+  games: ["action", "adventure", "rpg", "shooter", "puzzle", "racing", "sports", "strategy", "indie", "casual"],
+  anime: ["action", "adventure", "comedy", "drama", "fantasy", "horror", "mystery", "romance", "sci-fi", "slice of life", "sports", "supernatural"],
+};
+
 const tabs = document.querySelectorAll(".tab");
 const input = document.getElementById("searchInput");
 const btn = document.getElementById("searchBtn");
 const resultsEl = document.getElementById("results");
 const statusEl = document.getElementById("status");
+const genreFilter = document.getElementById("genreFilter");
+const yearFilter = document.getElementById("yearFilter");
+
+function populateFilters() {
+  // Genres
+  genreFilter.innerHTML = '<option value="">All genres</option>' +
+    GENRES[currentMode].map((g) => `<option value="${g}">${g}</option>`).join("");
+
+  // Years: current year down to 1985
+  const currentYear = new Date().getFullYear();
+  let yearOptions = '<option value="">All years</option>';
+  for (let y = currentYear; y >= 1985; y--) {
+    yearOptions += `<option value="${y}">${y}</option>`;
+  }
+  yearFilter.innerHTML = yearOptions;
+}
+populateFilters();
 
 tabs.forEach((tab) => {
   tab.addEventListener("click", () => {
@@ -16,6 +38,7 @@ tabs.forEach((tab) => {
       : "Search for an anime…";
     resultsEl.innerHTML = "";
     statusEl.textContent = "";
+    populateFilters();
   });
 });
 
@@ -26,8 +49,14 @@ async function runSearch() {
   statusEl.textContent = "Searching…";
   resultsEl.innerHTML = "";
 
+  const genre = genreFilter.value;
+  const year = yearFilter.value;
+  const params = new URLSearchParams({ q: query });
+  if (genre) params.set("genre", genre);
+  if (year) params.set("year", year);
+
   try {
-    const res = await fetch(`/search/${currentMode}?q=${encodeURIComponent(query)}`);
+    const res = await fetch(`/search/${currentMode}?${params.toString()}`);
     const data = await res.json();
 
     if (data.error) {
