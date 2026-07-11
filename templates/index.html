@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PixelScope — Games &amp; Anime Search</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark">◆</span>
+    <span class="brand-name">PixelScope</span>
+  </div>
+  <p class="tagline">Search games. Check ratings. Track anime.</p>
+</header>
+
+<main>
+  <section class="search-panel">
+    <div class="tabs">
+      <button class="tab active" data-mode="games">🎮 Games</button>
+      <button class="tab" data-mode="anime">🍥 Anime</button>
+    </div>
+
+    <div class="search-row">
+      <input type="text" id="searchInput" placeholder="Search for a game…" autocomplete="off">
+      <button id="searchBtn">Search</button>
+    </div>
+
+    <p id="status" class="status"></p>
+  </section>
+
+  <section id="results" class="results-grid"></section>
+</main>
+
+<footer>
+  <p>Data from RAWG.io (games) and Jikan / MyAnimeList (anime) — built with Flask.</p>
+</footer>
+
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
