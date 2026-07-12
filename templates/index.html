@@ -3,50 +3,75 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>PixelScope — Games &amp; Anime Search</title>
+<title>PixelScope — Game Search &amp; Ratings</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
 
-<header class="topbar">
+<div class="glow-backdrop" id="glowBackdrop"></div>
+
+<header class="hero">
   <div class="brand">
-    <span class="brand-mark">◆</span>
+    <svg class="logo-mark" viewBox="0 0 40 40" shape-rendering="crispEdges" xmlns="http://www.w3.org/2000/svg">
+      <rect x="1" y="1" width="38" height="38" rx="9" fill="url(#logoGrad)"/>
+      <g fill="white">
+        <rect x="17" y="10" width="3" height="3"/><rect x="20" y="10" width="3" height="3"/>
+        <rect x="14" y="13" width="3" height="3"/><rect x="23" y="13" width="3" height="3"/>
+        <rect x="11" y="16" width="3" height="3"/><rect x="26" y="16" width="3" height="3"/>
+        <rect x="11" y="19" width="3" height="3"/><rect x="26" y="19" width="3" height="3"/>
+        <rect x="14" y="22" width="3" height="3"/><rect x="23" y="22" width="3" height="3"/>
+        <rect x="17" y="25" width="3" height="3"/><rect x="20" y="25" width="3" height="3"/>
+        <rect x="23" y="24" width="3" height="3"/><rect x="26" y="27" width="3" height="3"/><rect x="29" y="30" width="3" height="3"/>
+      </g>
+      <defs>
+        <linearGradient id="logoGrad" x1="1" y1="1" x2="39" y2="39" gradientUnits="userSpaceOnUse">
+          <stop stop-color="#6d4dfa"/>
+          <stop offset="1" stop-color="#22d3ee"/>
+        </linearGradient>
+      </defs>
+    </svg>
     <span class="brand-name">PixelScope</span>
   </div>
-  <p class="tagline">Search games. Check ratings. Track anime.</p>
+  <p class="tagline">Search any game. See real ratings. Instantly.</p>
+
+  <div class="nav-actions">
+    <a href="/game/random" class="nav-btn">🎲 Surprise Me</a>
+    <button id="favToggle" class="nav-btn" type="button">☆ Favorites</button>
+  </div>
+
+  <div class="search-shell">
+    <div class="search-wrap" id="searchWrap">
+      <svg class="search-icon" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M21 21l-4.3-4.3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input type="text" id="searchInput" placeholder="Search for a game… e.g. Red Dead Redemption" autocomplete="off">
+      <button id="filtersToggle" class="filters-toggle" type="button">
+        Filters
+        <svg class="chevron" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
+
+    <div class="suggest-dropdown" id="suggestDropdown"></div>
+  </div>
+
+  <div class="filters-panel" id="filtersPanel">
+    <select id="genreFilter">
+      <option value="">All genres</option>
+    </select>
+    <select id="yearFilter">
+      <option value="">All years</option>
+    </select>
+  </div>
 </header>
 
 <main>
-  <section class="search-panel">
-    <div class="tabs">
-      <button class="tab active" data-mode="games">🎮 Games</button>
-      <button class="tab" data-mode="anime">🍥 Anime</button>
-    </div>
-
-    <div class="search-row">
-      <input type="text" id="searchInput" placeholder="Search for a game…" autocomplete="off">
-      <button id="searchBtn">Search</button>
-    </div>
-
-    <div class="filter-row">
-      <select id="genreFilter">
-        <option value="">All genres</option>
-      </select>
-      <select id="yearFilter">
-        <option value="">All years</option>
-      </select>
-    </div>
-
-    <p id="status" class="status"></p>
-  </section>
-
+  <h2 id="resultsHeading" class="results-heading" style="display:none"></h2>
+  <p id="status" class="status"></p>
   <section id="results" class="results-grid"></section>
 </main>
 
 <footer>
-  <p>Data from RAWG.io (games) and Jikan / MyAnimeList (anime) — built with Flask.</p>
+  <p>Ratings from RAWG.io and Steam · Built with Flask</p>
 </footer>
 
 <script src="{{ url_for('static', filename='app.js') }}"></script>
