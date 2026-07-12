@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{ game.name }} — PixelScope</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="glow-backdrop" id="glowBackdrop"></div>
+
+<a href="/" class="back-link">
+  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  Back to search
+</a>
+
+<div class="detail-banner">
+  {% if game.image %}
+  <img class="banner-img" src="{{ game.image }}" alt="{{ game.name }}">
+  {% endif %}
+  <div class="detail-banner-overlay"></div>
+</div>
+
+<main class="detail-main">
+  <div class="detail-header">
+    <div class="detail-title-row">
+      <h1>{{ game.name }}</h1>
+      <button id="favBtnDetail" class="fav-btn-lg"
+        data-id="{{ game.id }}"
+        data-name="{{ game.name }}"
+        data-image="{{ game.image or '' }}"
+        data-released="{{ game.released or '' }}"
+        data-genres="{{ game.genres or '' }}"
+        data-publisher="{{ game.publisher or '' }}">♥</button>
+    </div>
+    {% if game.publisher %}<p class="studio-credit">{{ game.publisher }}</p>{% endif %}
+    <p class="meta detail-meta">
+      {{ game.released or "Release year unknown" }}
+      {% if game.genres %} · {{ game.genres }}{% endif %}
+      {% if game.esrb %} · <span class="esrb-badge">{{ game.esrb }}</span>{% endif %}
+    </p>
+  </div>
+
+  <div class="scores-row">
+    <div class="score-card">
+      <span class="score-value">{{ "%.1f"|format(game.rating) if game.rating else "—" }}</span>
+      <span class="score-label">RAWG Community<br>out of 5</span>
+    </div>
+
+    {% if game.steam_rating %}
+    <div class="score-card steam-card">
+      <span class="score-value">{{ game.steam_rating.positive_pct }}%</span>
+      <span class="score-label">{{ game.steam_rating.description }}<br>{{ "{:,}".format(game.steam_rating.total_reviews) }} Steam reviews</span>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if game.platforms %}
+  <div class="chip-row">
+    {% for p in game.platforms %}
+      <span class="chip">{{ p }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if game.stores %}
+  <div class="store-row">
+    {% for s in game.stores %}
+      <a class="store-btn" href="{{ s.url }}" target="_blank" rel="noopener">Available on {{ s.name }} ↗</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if game.trailer or game.screenshots %}
+  <h2 class="section-title">Trailer &amp; Screenshots</h2>
+  {% endif %}
+
+  {% if game.trailer %}
+  <video class="trailer-video" controls poster="{{ game.trailer.preview }}">
+    <source src="{{ game.trailer.video }}" type="video/mp4">
+  </video>
+  {% endif %}
+
+  <a class="youtube-btn" href="https://www.youtube.com/results?search_query={{ (game.name + ' official trailer') | urlencode }}" target="_blank" rel="noopener">
+    ▶ Find trailer on YouTube
+  </a>
+
+  {% if game.screenshots %}
+  <div class="screenshot-strip" id="screenshotStrip">
+    {% for shot in game.screenshots %}
+      <img src="{{ shot }}" alt="{{ game.name }} screenshot" loading="lazy" class="screenshot-thumb">
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <h2 class="section-title">About</h2>
+  <p class="description">{{ game.description }}</p>
+
+  {% if game.tags %}
+  <h2 class="section-title">Tags</h2>
+  <div class="chip-row tag-row">
+    {% for t in game.tags %}
+      <span class="chip tag-chip">#{{ t }}</span>
+    {% endfor %}
+  </div>
+  {% endif %}
+</main>
+
+<div class="lightbox-overlay" id="lightboxOverlay">
+  <button class="lightbox-close" id="lightboxClose">✕</button>
+  <img id="lightboxImg" src="" alt="Screenshot preview">
+</div>
+
+<footer>
+  <p>Ratings from RAWG.io and Steam · Built with Flask</p>
+</footer>
+
+<script>
+document.addEventListener("mousemove", (e) => {
+  const el = document.getElementById("glowBackdrop");
+  el.style.setProperty("--mx", `${e.clientX}px`);
+  el.style.setProperty("--my", `${e.clientY}px`);
+});
+
+const lightbox = document.getElementById("lightboxOverlay");
+const lightboxImg = document.getElementById("lightboxImg");
+const lightboxClose = document.getElementById("lightboxClose");
+const strip = document.getElementById("screenshotStrip");
+
+if (strip) {
+  strip.addEventListener("click", (e) => {
+    if (e.target.tagName === "IMG") {
+      lightboxImg.src = e.target.src;
+      lightbox.classList.add("open");
+    }
+  });
+}
+
+function closeLightbox() { lightbox.classList.remove("open"); lightboxImg.src = ""; }
+lightboxClose.addEventListener("click", closeLightbox);
+lightbox.addEventListener("click", (e) => { if (e.target === lightbox) closeLightbox(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeLightbox(); });
+
+// ---- Favorite toggle (saved locally in this browser) ----
+const FAV_KEY = "pixelscope_favorites";
+const favBtnDetail = document.getElementById("favBtnDetail");
+
+function getFavorites() {
+  try { return JSON.parse(localStorage.getItem(FAV_KEY) || "{}"); }
+  catch (err) { return {}; }
+}
+
+const favs = getFavorites();
+if (favs[favBtnDetail.dataset.id]) favBtnDetail.classList.add("active");
+
+favBtnDetail.addEventListener("click", () => {
+  const favs = getFavorites();
+  const id = favBtnDetail.dataset.id;
+  if (favs[id]) {
+    delete favs[id];
+    favBtnDetail.classList.remove("active");
+  } else {
+    favs[id] = {
+      id, name: favBtnDetail.dataset.name, image: favBtnDetail.dataset.image,
+      released: favBtnDetail.dataset.released, genres: favBtnDetail.dataset.genres,
+      publisher: favBtnDetail.dataset.publisher,
+    };
+    favBtnDetail.classList.add("active");
+  }
+  localStorage.setItem(FAV_KEY, JSON.stringify(favs));
+});
+</script>
+</body>
+</html>
