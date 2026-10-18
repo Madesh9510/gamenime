@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Panel · PixelScope</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    :root{--bg:#0a0a0c;--surface:#111118;--card:#18181f;--border:#222230;--accent:#6366f1;--text:#f0f0f0;--muted:#777;--green:#22c55e;--red:#ef4444;--gold:#f59e0b;--blue:#3b82f6;--r:8px;}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased;}
+    a{color:inherit;text-decoration:none;}
+
+    .admin-nav{background:var(--surface);border-bottom:1px solid var(--border);padding:0 24px;height:58px;display:flex;align-items:center;justify-content:space-between;}
+    .admin-nav .logo{font-size:1rem;font-weight:800;display:flex;align-items:center;gap:8px;}
+    .admin-nav .logo span{color:var(--accent);}
+    .admin-nav .badge{background:rgba(245,158,11,.15);color:var(--gold);font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:4px;border:1px solid rgba(245,158,11,.3);}
+    .nav-right{display:flex;align-items:center;gap:10px;}
+    .nav-right a,.nav-right button{padding:6px 12px;border-radius:6px;font-size:.8rem;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--card);color:var(--muted);font-family:inherit;transition:all .15s;}
+    .nav-right a:hover,.nav-right button:hover{color:var(--text);border-color:var(--accent);}
+    .nav-right .logout-btn{color:var(--red);border-color:rgba(239,68,68,.25);}
+
+    /* LOGIN */
+    .login-wrap{display:flex;align-items:center;justify-content:center;min-height:calc(100vh - 58px);padding:20px;}
+    .login-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:40px;width:100%;max-width:380px;text-align:center;}
+    .login-box h1{font-size:1.3rem;font-weight:800;margin-bottom:6px;}
+    .login-box p{color:var(--muted);font-size:.84rem;margin-bottom:28px;}
+    .login-input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:11px 14px;border-radius:var(--r);font-size:.9rem;outline:none;margin-bottom:12px;font-family:inherit;}
+    .login-input:focus{border-color:var(--accent);}
+    .login-btn{width:100%;background:var(--accent);color:#fff;border:none;padding:11px;border-radius:var(--r);font-size:.9rem;font-weight:700;cursor:pointer;font-family:inherit;}
+    .login-btn:hover{opacity:.88;}
+    .err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);color:var(--red);padding:10px 14px;border-radius:var(--r);font-size:.82rem;margin-bottom:14px;}
+
+    /* LAYOUT */
+    .admin-body{display:grid;grid-template-columns:230px 1fr;min-height:calc(100vh - 58px);}
+    .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:16px 0;}
+    .sidebar-section{font-size:.65rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;padding:12px 18px 6px;}
+    .sidebar-link{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:.84rem;color:var(--muted);border-left:3px solid transparent;transition:all .15s;cursor:pointer;}
+    .sidebar-link:hover,.sidebar-link.active{color:var(--text);background:rgba(99,102,241,.08);border-left-color:var(--accent);}
+    .sidebar-link .icon{width:18px;text-align:center;font-size:.9rem;}
+    .main{padding:28px;}
+
+    /* STATS */
+    .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:14px;margin-bottom:28px;}
+    .stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:18px;}
+    .stat-label{font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;}
+    .stat-value{font-size:1.7rem;font-weight:800;}
+    .stat-sub{font-size:.7rem;color:var(--muted);margin-top:4px;}
+    .green{color:var(--green);} .gold{color:var(--gold);} .blue{color:var(--blue);} .red{color:var(--red);}
+
+    /* SECTION HEADER */
+    .sec-title{font-size:.95rem;font-weight:700;margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px;margin-bottom:20px;}
+    .panel h3{font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:14px;}
+
+    /* CACHE */
+    .cache-row{display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid var(--border);}
+    .cache-row:last-child{border-bottom:none;}
+    .cache-name{font-size:.875rem;font-weight:500;}
+    .cache-info{font-size:.72rem;color:var(--muted);margin-top:2px;}
+    .clear-btn{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);padding:5px 13px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;font-family:inherit;transition:background .15s;}
+    .clear-btn:hover{background:rgba(239,68,68,.22);}
+
+    /* TABLES */
+    .tbl{width:100%;border-collapse:collapse;}
+    .tbl th{text-align:left;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;padding:8px 12px;border-bottom:1px solid var(--border);}
+    .tbl td{padding:10px 12px;border-bottom:1px solid var(--border);font-size:.84rem;vertical-align:middle;}
+    .tbl tr:last-child td{border-bottom:none;}
+    .tbl tr:hover td{background:rgba(255,255,255,.02);}
+    .role-admin{background:rgba(245,158,11,.12);color:var(--gold);font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:4px;border:1px solid rgba(245,158,11,.25);}
+    .role-user{background:rgba(99,102,241,.1);color:#a5b4fc;font-size:.68rem;font-weight:700;padding:2px 8px;border-radius:4px;border:1px solid rgba(99,102,241,.2);}
+
+    /* FORMS */
+    .add-form{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--border);}
+    .form-input{flex:1;min-width:120px;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--r);font-size:.82rem;outline:none;font-family:inherit;}
+    .form-input:focus{border-color:var(--accent);}
+    .add-btn{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:var(--r);font-size:.82rem;font-weight:600;cursor:pointer;font-family:inherit;}
+    .add-btn:hover{opacity:.88;}
+    .del-btn{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);padding:4px 10px;border-radius:5px;font-size:.72rem;cursor:pointer;font-family:inherit;}
+    .del-btn:hover{background:rgba(239,68,68,.22);}
+
+    /* NSFW KEYWORDS — hidden by default */
+    .kw-list{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+    .kw-tag{display:inline-flex;align-items:center;gap:5px;background:var(--surface);border:1px solid var(--border);padding:3px 10px;border-radius:20px;font-size:.75rem;}
+    .kw-word{filter:blur(5px);transition:filter .3s;cursor:pointer;user-select:none;}
+    .kw-word:hover,.kw-word.revealed{filter:blur(0);}
+    .kw-tag form{display:inline;}
+    .kw-tag button{background:none;border:none;color:var(--red);cursor:pointer;font-size:.8rem;line-height:1;}
+    .kw-hint{font-size:.72rem;color:var(--muted);margin-bottom:10px;}
+
+    /* FEEDS */
+    .feed-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);}
+    .feed-row:last-child{border-bottom:none;}
+    .feed-name{font-size:.875rem;font-weight:500;}
+    .feed-url{font-size:.7rem;color:var(--muted);}
+    .toggle-btn{padding:5px 14px;border-radius:6px;font-size:.75rem;font-weight:600;cursor:pointer;border:1px solid;font-family:inherit;transition:background .15s;}
+    .toggle-btn.on{background:rgba(34,197,94,.1);color:var(--green);border-color:rgba(34,197,94,.25);}
+    .toggle-btn.off{background:rgba(239,68,68,.1);color:var(--red);border-color:rgba(239,68,68,.2);}
+
+    .alert{padding:10px 14px;border-radius:var(--r);font-size:.82rem;margin-bottom:18px;}
+    .alert.ok{background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.25);color:var(--green);}
+
+    .empty-row{text-align:center;padding:32px;color:var(--muted);font-size:.85rem;}
+  </style>
+</head>
+<body>
+
+<nav class="admin-nav">
+  <div class="logo">🎮 Pixel<span>Scope</span> <span class="badge">ADMIN</span></div>
+  <div class="nav-right">
+    <a href="/">← Back to Site</a>
+    {% if logged_in %}
+    <form method="post" action="/admin/logout" style="display:inline;">
+      <button class="logout-btn" type="submit">Logout</button>
+    </form>
+    {% endif %}
+  </div>
+</nav>
+
+{% if not logged_in %}
+<div class="login-wrap">
+  <div class="login-box">
+    <div style="font-size:2.5rem;margin-bottom:12px;">⚙️</div>
+    <h1>Admin Login</h1>
+    <p>Enter the admin password to access the control panel.</p>
+    {% if error %}<div class="err">{{ error }}</div>{% endif %}
+    <form method="post" action="/admin/login">
+      <input class="login-input" type="password" name="password" placeholder="Admin password" autofocus>
+      <button class="login-btn" type="submit">Access Panel →</button>
+    </form>
+  </div>
+</div>
+
+{% else %}
+<div class="admin-body">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">Dashboard</div>
+    <a class="sidebar-link {% if not section %}active{% endif %}" href="/admin">
+      <span class="icon">📊</span> Overview
+    </a>
+
+    <div class="sidebar-section">Management</div>
+    <a class="sidebar-link {% if section=='users' %}active{% endif %}" href="/admin?section=users">
+      <span class="icon">👥</span> User Accounts
+    </a>
+    <a class="sidebar-link {% if section=='cache' %}active{% endif %}" href="/admin?section=cache">
+      <span class="icon">🗃️</span> Cache Manager
+    </a>
+    <a class="sidebar-link {% if section=='goty' %}active{% endif %}" href="/admin?section=goty">
+      <span class="icon">🏆</span> GOTY Winners
+    </a>
+
+    <div class="sidebar-section">Content</div>
+    <a class="sidebar-link {% if section=='keywords' %}active{% endif %}" href="/admin?section=keywords">
+      <span class="icon">🚫</span> Content Filter
+    </a>
+    <a class="sidebar-link {% if section=='feeds' %}active{% endif %}" href="/admin?section=feeds">
+      <span class="icon">📰</span> News Feeds
+    </a>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+    {% if msg %}<div class="alert ok">✓ {{ msg }}</div>{% endif %}
+
+    {% if not section %}
+    <!-- OVERVIEW -->
+    <div class="sec-title">Overview</div>
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Total Users</div>
+        <div class="stat-value blue">{{ stats.total_users }}</div>
+        <div class="stat-sub">registered accounts</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Admin Accounts</div>
+        <div class="stat-value gold">{{ stats.admin_count }}</div>
+        <div class="stat-sub">with admin access</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Trailer Cache</div>
+        <div class="stat-value green">{{ stats.trailer_count }}</div>
+        <div class="stat-sub">games cached</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">News Articles</div>
+        <div class="stat-value">{{ stats.news_count }}</div>
+        <div class="stat-sub">{{ stats.news_age }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">INR Rate</div>
+        <div class="stat-value">₹{{ stats.inr_rate }}</div>
+        <div class="stat-sub">{{ stats.inr_age }}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">GOTY Entries</div>
+        <div class="stat-value">{{ stats.goty_count }}</div>
+        <div class="stat-sub">in list</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Quick Actions</h3>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <form method="post" action="/admin/clear-cache/trailers"><button class="clear-btn" type="submit">🗑 Clear Trailer Cache</button></form>
+        <form method="post" action="/admin/clear-cache/news"><button class="clear-btn" type="submit">🗑 Clear News Cache</button></form>
+        <form method="post" action="/admin/clear-cache/inr"><button class="clear-btn" type="submit">🔄 Refresh INR Rate</button></form>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>Recent Registrations</h3>
+      {% if users %}
+      <table class="tbl">
+        <thead><tr><th>Username</th><th>Email</th><th>Joined</th><th>Role</th></tr></thead>
+        <tbody>
+          {% for u in users[:5] %}
+          <tr>
+            <td><strong>{{ u.username }}</strong></td>
+            <td style="color:var(--muted);">{{ u.email[:2] }}***@{{ u.email.split('@')[1] if '@' in u.email else '***' }}</td>
+            <td style="color:var(--muted);">{{ u.created_at[:10] if u.created_at else '—' }}</td>
+            <td>{% if u.is_admin %}<span class="role-admin">Admin</span>{% else %}<span class="role-user">User</span>{% endif %}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% if users|length > 5 %}<p style="font-size:.78rem;color:var(--muted);margin-top:10px;">+ {{ users|length - 5 }} more — <a href="/admin?section=users" style="color:var(--accent)">View all →</a></p>{% endif %}
+      {% else %}<p class="empty-row">No users yet.</p>{% endif %}
+    </div>
+
+    {% elif section == 'users' %}
+    <!-- USER ACCOUNTS -->
+    <div class="sec-title">
+      User Accounts
+      <span style="font-size:.78rem;color:var(--muted);font-weight:400;">{{ users|length }} total</span>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-value blue">{{ stats.total_users }}</div></div>
+      <div class="stat-card"><div class="stat-label">Regular Users</div><div class="stat-value">{{ stats.total_users - stats.admin_count }}</div></div>
+      <div class="stat-card"><div class="stat-label">Admin Accounts</div><div class="stat-value gold">{{ stats.admin_count }}</div></div>
+    </div>
+    <div class="panel">
+      <h3>All Registered Accounts</h3>
+      {% if users %}
+      <table class="tbl">
+        <thead>
+          <tr><th>#</th><th>Username</th><th>Email</th><th>Joined</th><th>Last Login</th><th>Role</th><th>Action</th></tr>
+        </thead>
+        <tbody>
+          {% for u in users %}
+          <tr>
+            <td style="color:var(--muted);">{{ loop.index }}</td>
+            <td><strong>{{ u.username }}</strong></td>
+            <td style="color:var(--muted);font-size:.78rem;">{{ u.email[:3] }}***@{{ u.email.split('@')[1][:4] if '@' in u.email else '***' }}***</td>
+            <td style="color:var(--muted);font-size:.78rem;">{{ u.created_at[:10] if u.created_at else '—' }}</td>
+            <td style="color:var(--muted);font-size:.78rem;">{{ u.last_login[:16] if u.last_login else 'Never' }}</td>
+            <td>{% if u.is_admin %}<span class="role-admin">Admin</span>{% else %}<span class="role-user">User</span>{% endif %}</td>
+            <td>
+              {% if not u.is_admin %}
+              <form method="post" action="/admin/users/delete" style="display:inline;">
+                <input type="hidden" name="user_id" value="{{ u.id }}">
+                <button class="del-btn" type="submit" onclick="return confirm('Delete user {{ u.username }}?')">Delete</button>
+              </form>
+              {% else %}<span style="color:var(--muted);font-size:.72rem;">Protected</span>{% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}<p class="empty-row">No users registered yet.</p>{% endif %}
+    </div>
+
+    {% elif section == 'cache' %}
+    <!-- CACHE MANAGER -->
+    <div class="sec-title">Cache Manager</div>
+    <div class="panel">
+      <h3>Active Caches</h3>
+      <div class="cache-row">
+        <div><div class="cache-name">YouTube Trailer Cache</div><div class="cache-info">{{ stats.trailer_count }} games · Persists until server restart</div></div>
+        <form method="post" action="/admin/clear-cache/trailers"><button class="clear-btn" type="submit">Clear</button></form>
+      </div>
+      <div class="cache-row">
+        <div><div class="cache-name">News Feed Cache</div><div class="cache-info">{{ stats.news_count }} articles · {{ stats.news_age }}</div></div>
+        <form method="post" action="/admin/clear-cache/news"><button class="clear-btn" type="submit">Clear</button></form>
+      </div>
+      <div class="cache-row">
+        <div><div class="cache-name">INR Exchange Rate</div><div class="cache-info">1 USD = ₹{{ stats.inr_rate }} · {{ stats.inr_age }}</div></div>
+        <form method="post" action="/admin/clear-cache/inr"><button class="clear-btn" type="submit">Refresh</button></form>
+      </div>
+    </div>
+
+    {% elif section == 'goty' %}
+    <!-- GOTY WINNERS -->
+    <div class="sec-title">GOTY Winners</div>
+    <div class="panel">
+      <h3>Current List ({{ settings.goty_winners|length }} entries)</h3>
+      <table class="tbl">
+        <thead><tr><th>Year</th><th>Game</th><th></th></tr></thead>
+        <tbody>
+          {% for g in settings.goty_winners %}
+          <tr>
+            <td style="color:var(--gold);font-weight:700;">{{ g.year }}</td>
+            <td>{{ g.name }}</td>
+            <td>
+              <form method="post" action="/admin/goty/remove">
+                <input type="hidden" name="name" value="{{ g.name }}">
+                <input type="hidden" name="year" value="{{ g.year }}">
+                <button class="del-btn" type="submit">Remove</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <form class="add-form" method="post" action="/admin/goty/add">
+        <input class="form-input" type="number" name="year" placeholder="Year" min="2000" max="2030" style="max-width:100px;">
+        <input class="form-input" type="text" name="name" placeholder="Game title (e.g. Elden Ring)" required>
+        <button class="add-btn" type="submit">+ Add Winner</button>
+      </form>
+    </div>
+
+    {% elif section == 'keywords' %}
+    <!-- CONTENT FILTER -->
+    <div class="sec-title">Content Filter</div>
+    <div class="panel">
+      <h3>Blocked Keywords</h3>
+      <p class="kw-hint">🔒 Words are hidden for safety. Hover to reveal each one.</p>
+      <div class="kw-list">
+        {% for kw in settings.nsfw_keywords %}
+        <span class="kw-tag">
+          <span class="kw-word" onclick="this.classList.toggle('revealed')" title="Click to reveal">{{ kw }}</span>
+          <form method="post" action="/admin/keywords/remove">
+            <input type="hidden" name="keyword" value="{{ kw }}">
+            <button type="submit" title="Remove">✕</button>
+          </form>
+        </span>
+        {% endfor %}
+        {% if not settings.nsfw_keywords %}<span style="color:var(--muted);font-size:.82rem;">No keywords configured.</span>{% endif %}
+      </div>
+      <form class="add-form" method="post" action="/admin/keywords/add">
+        <input class="form-input" type="text" name="keyword" placeholder="Add a blocked keyword…">
+        <button class="add-btn" type="submit">+ Add</button>
+      </form>
+    </div>
+
+    {% elif section == 'feeds' %}
+    <!-- NEWS FEEDS -->
+    <div class="sec-title">News Feeds</div>
+    <div class="panel">
+      <h3>Configured Sources</h3>
+      {% for feed in settings.news_feeds %}
+      <div class="feed-row">
+        <div>
+          <div class="feed-name">{{ feed.name }}</div>
+          <div class="feed-url">{{ feed.url }}</div>
+        </div>
+        <form method="post" action="/admin/feeds/toggle">
+          <input type="hidden" name="url" value="{{ feed.url }}">
+          <button class="toggle-btn {{ 'on' if feed.enabled else 'off' }}" type="submit">
+            {{ '✓ Enabled' if feed.enabled else '✗ Disabled' }}
+          </button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  </main>
+</div>
+{% endif %}
+</body>
+</html>

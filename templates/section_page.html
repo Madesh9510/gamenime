@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ title }} · PixelScope{% endblock %}
+
+{% block extra_styles %}
+.sp-head { background:var(--surface); border-bottom:1px solid var(--border); padding:28px; transition:background .3s,border-color .3s; }
+.sp-head .back { font-size:.8rem; color:var(--muted); display:inline-block; margin-bottom:10px; transition:color .15s; }
+.sp-head .back:hover { color:var(--text); }
+.sp-head h1 { font-size:1.6rem; font-weight:800; }
+.sp-head p { font-size:.82rem; color:var(--muted); margin-top:6px; }
+.sp-body { padding:32px 0 64px; }
+{% endblock %}
+
+{% block content %}
+<div class="sp-head">
+  <div class="container">
+    <a class="back" href="/">← Back to Home</a>
+    <h1>{{ title }}</h1>
+    <p>{{ games|length }} game{{ 's' if games|length != 1 }}</p>
+  </div>
+</div>
+
+<div class="sp-body container">
+  <div class="grid-4">
+    {% for g in games %}
+    <a class="card" href="/game/{{ g.id }}">
+      <div class="card-img">
+        {% if g.image %}<img src="{{ g.image }}" alt="{{ g.name }}" loading="lazy">
+        {% else %}<div class="card-placeholder">🎮</div>{% endif %}
+        {% if g.award_label %}<span class="card-badge">{{ g.award_label }}</span>{% endif %}
+        {% if g.release_date %}<span class="card-badge upcoming">{{ g.release_date }}</span>{% endif %}
+        <div class="lib-wrap">
+          <button class="lib-btn"
+            data-id="{{ g.id }}" data-name="{{ g.name|e }}"
+            data-image="{{ g.image or '' }}" data-rating="{{ g.rating or '' }}"
+            data-genres="{{ g.genres or '' }}" data-released="{{ g.released or '' }}"
+            onclick="toggleLibDrop(event,this)" title="Add to Library">+</button>
+          <div class="lib-drop">
+            <button onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,'want')">🔖 Want to Play</button>
+            <button onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,'playing')">🎮 Playing</button>
+            <button onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,'completed')">✓ Completed</button>
+            <button class="lib-remove" onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,null)">✕ Remove</button>
+          </div>
+        </div>
+        <button class="heart-btn"
+          data-id="{{ g.id }}" data-name="{{ g.name|e }}"
+          data-image="{{ g.image or '' }}" data-rating="{{ g.rating or '' }}"
+          data-genres="{{ g.genres or '' }}" data-released="{{ g.released or '' }}"
+          onclick="toggleWatchlist(event,this)">♡</button>
+      </div>
+      <div class="card-body">
+        <div class="card-title">{{ g.name }}</div>
+        <div class="card-sub">
+          {%- set parts=[] -%}
+          {%- if g.released %}{% set _=parts.append(g.released) %}{% endif -%}
+          {%- if g.genres %}{% set _=parts.append(g.genres) %}{% endif -%}
+          {{ parts|join(' · ') or '&nbsp;' }}
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

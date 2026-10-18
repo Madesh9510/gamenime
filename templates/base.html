@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}PixelScope{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0c0c0e; --surface: #16161a; --card: #1e1e24; --border: #2a2a35;
+      --accent: #6366f1; --accent-dim: rgba(99,102,241,.15);
+      --text: #f0f0f0; --muted: #9b9bae; --gold: #f59e0b;
+      --green: #22c55e; --red: #ef4444; --r: 10px;
+      --nav-bg: rgba(12,12,14,.92);
+      --placeholder-from: #1a1a2e; --placeholder-to: #16213e;
+    }
+    body.light {
+      --bg: #f2f2f8; --surface: #e6e6f2; --card: #ffffff; --border: #cbcbde;
+      --accent: #4a4cc9; --accent-dim: rgba(74,76,201,.1);
+      --text: #0e0e1c; --muted: #4a4a68; --gold: #a06800;
+      --nav-bg: rgba(242,242,248,.96);
+      --placeholder-from: #d8d8ee; --placeholder-to: #c8c8e4; --hero-from: #d4d4ee;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family:'Inter',system-ui,sans-serif; background:var(--bg); color:var(--text); min-height:100vh; display:flex; flex-direction:column; -webkit-font-smoothing:antialiased; transition:background .3s,color .3s; }
+    a { color:inherit; text-decoration:none; }
+    img { display:block; max-width:100%; }
+    button,input,select,textarea { font-family:inherit; }
+    ::-webkit-scrollbar { width:6px; height:6px; }
+    ::-webkit-scrollbar-track { background:var(--surface); }
+    ::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+    #bg-canvas { position:fixed; top:0; left:0; width:100%; height:100%; z-index:0; pointer-events:none; }
+    nav, main, footer { position:relative; z-index:1; }
+
+    .nav { position:sticky; top:0; z-index:500; background:var(--nav-bg); backdrop-filter:blur(14px); border-bottom:1px solid var(--border); height:62px; padding:0 24px; display:flex; align-items:center; gap:16px; transition:background .3s,border-color .3s; }
+    .nav-logo { font-size:1.1rem; font-weight:800; white-space:nowrap; display:flex; align-items:center; gap:7px; flex-shrink:0; }
+    .nav-logo .dot { color:var(--accent); }
+    .search-wrap { flex:1; max-width:460px; position:relative; }
+    .search-input { width:100%; background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:9px 42px 9px 14px; color:var(--text); font-size:.875rem; outline:none; transition:border-color .2s,background .3s; }
+    .search-input::placeholder { color:var(--muted); }
+    .search-input:focus { border-color:var(--accent); background:var(--card); }
+    .search-btn { position:absolute; right:0; top:0; bottom:0; width:40px; display:flex; align-items:center; justify-content:center; color:var(--muted); font-size:1.1rem; cursor:pointer; background:none; border:none; transition:color .2s; }
+    .search-btn:hover { color:var(--text); }
+    .drop { position:absolute; top:calc(100% + 6px); left:0; right:0; background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; box-shadow:0 20px 50px rgba(0,0,0,.35); z-index:600; display:none; }
+    .drop.open { display:block; }
+    .drop-item { display:flex; align-items:center; gap:12px; padding:10px 14px; transition:background .12s; cursor:pointer; }
+    .drop-item:hover { background:var(--surface); }
+    .drop-thumb { width:50px; height:34px; border-radius:5px; object-fit:cover; background:var(--border); flex-shrink:0; }
+    .drop-info { flex:1; min-width:0; }
+    .drop-name { font-size:.875rem; font-weight:500; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .drop-meta { font-size:.72rem; color:var(--muted); margin-top:2px; }
+
+    .nav-links { display:flex; align-items:center; gap:4px; margin-left:auto; }
+    .nav-links a { padding:6px 10px; border-radius:6px; font-size:.8rem; color:var(--muted); transition:color .15s,background .15s; white-space:nowrap; position:relative; }
+    .nav-links a:hover { color:var(--text); background:var(--surface); }
+    .nav-pill { background:var(--accent)!important; color:#fff!important; padding:6px 14px; border-radius:6px; font-weight:600; }
+    .nav-pill:hover { opacity:.85; }
+    .nav-badge { position:absolute; top:0; right:2px; background:var(--red); color:#fff; font-size:.6rem; font-weight:700; min-width:16px; height:16px; border-radius:8px; display:none; align-items:center; justify-content:center; padding:0 3px; }
+    .theme-btn { width:36px; height:36px; border-radius:8px; border:1px solid var(--border); background:var(--surface); cursor:pointer; font-size:1.1rem; display:flex; align-items:center; justify-content:center; transition:background .2s,border-color .2s; flex-shrink:0; }
+    .theme-btn:hover { border-color:var(--accent); background:var(--accent-dim); }
+    main { flex:1; }
+
+    /* CARD */
+    .card { display:block; background:var(--card); border-radius:var(--r); overflow:hidden; transition:transform .2s,box-shadow .2s,background .3s; border:1px solid var(--border); }
+    .card:hover { transform:translateY(-4px); box-shadow:0 16px 40px rgba(0,0,0,.35); }
+    .card-img { position:relative; padding-top:56.25%; overflow:hidden; }
+    .card-img img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; transition:transform .3s; }
+    .card:hover .card-img img { transform:scale(1.06); }
+    .card-placeholder { position:absolute; inset:0; background:linear-gradient(135deg,var(--placeholder-from) 0%,var(--placeholder-to) 100%); display:flex; align-items:center; justify-content:center; font-size:2.5rem; }
+    .card-rating { position:absolute; top:8px; right:8px; background:rgba(0,0,0,.72); backdrop-filter:blur(4px); color:var(--gold); font-size:.72rem; font-weight:700; padding:3px 7px; border-radius:5px; }
+    .card-badge { position:absolute; top:8px; left:8px; background:var(--accent); color:#fff; font-size:.68rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; padding:3px 8px; border-radius:4px; }
+    .card-badge.upcoming { background:#0891b2; }
+    .card-body { padding:12px; }
+    .card-title { font-size:.875rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .card-sub { font-size:.72rem; color:var(--muted); margin-top:4px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+    /* HEART — hidden until hover, stays if active */
+    .heart-btn { position:absolute; bottom:8px; right:8px; width:30px; height:30px; border-radius:50%; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); border:none; color:#fff; font-size:.95rem; display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:3; transition:opacity .2s,transform .15s,background .15s; opacity:0; }
+    .card:hover .heart-btn { opacity:1; }
+    .heart-btn.active { opacity:1; color:var(--red); }
+    .heart-btn:hover { background:rgba(0,0,0,.88); transform:scale(1.15); }
+    @keyframes heartPop { 0%{transform:scale(1)} 50%{transform:scale(1.45)} 100%{transform:scale(1)} }
+    .heart-btn.pop { animation:heartPop .28s ease; }
+
+    /* LIBRARY — hidden until hover, stays if status set */
+    .lib-wrap { position:absolute; bottom:8px; left:8px; z-index:3; opacity:0; transition:opacity .2s; }
+    .card:hover .lib-wrap { opacity:1; }
+    .lib-wrap.has-status { opacity:1; }
+    .lib-btn { width:30px; height:30px; border-radius:50%; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); border:none; color:#fff; font-size:.82rem; display:flex; align-items:center; justify-content:center; cursor:pointer; transition:transform .15s; }
+    .lib-btn:hover { transform:scale(1.15); }
+    .lib-drop { display:none; position:absolute; bottom:36px; left:0; background:var(--card); border:1px solid var(--border); border-radius:9px; overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.45); width:148px; z-index:10; }
+    .lib-drop.open { display:block; }
+    .lib-drop button { display:block; width:100%; text-align:left; padding:9px 13px; font-size:.78rem; color:var(--text); background:none; border:none; cursor:pointer; transition:background .12s; }
+    .lib-drop button:hover { background:var(--surface); }
+    .lib-drop .lib-remove { color:var(--red)!important; }
+
+    /* LAYOUT */
+    .container { max-width:1280px; margin:0 auto; padding:0 28px; }
+    .section-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+    .section-title { font-size:1.1rem; font-weight:700; }
+    .more-link { font-size:.8rem; color:var(--accent); font-weight:500; transition:opacity .2s; }
+    .more-link:hover { opacity:.7; }
+    .grid-4 { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:16px; }
+    @media(max-width:600px){ .grid-4 { grid-template-columns:repeat(2,1fr); gap:12px; } }
+    .skel-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:16px; }
+    .skel-card { background:var(--card); border-radius:var(--r); border:1px solid var(--border); overflow:hidden; animation:pulse 1.6s ease-in-out infinite; }
+    .skel-img { padding-top:56.25%; background:var(--surface); }
+    .skel-body { padding:12px; }
+    .skel-line { height:11px; border-radius:6px; background:var(--surface); margin-bottom:8px; }
+    .skel-line.short { width:55%; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.45} }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spinner { width:32px; height:32px; border:3px solid var(--border); border-top-color:var(--accent); border-radius:50%; animation:spin .7s linear infinite; }
+    .btn { display:inline-flex; align-items:center; gap:8px; padding:10px 22px; border-radius:8px; border:none; cursor:pointer; font-size:.875rem; font-weight:600; transition:opacity .2s,background .2s; }
+    .btn-primary { background:var(--accent); color:#fff; }
+    .btn-primary:hover { opacity:.88; }
+    .btn-ghost { background:var(--surface); color:var(--text); border:1px solid var(--border); }
+    .btn-ghost:hover { border-color:var(--accent); }
+    .tag { display:inline-block; padding:4px 10px; border-radius:20px; font-size:.72rem; font-weight:500; background:var(--surface); color:var(--muted); border:1px solid var(--border); }
+    footer { border-top:1px solid var(--border); padding:22px 28px; text-align:center; font-size:.78rem; color:var(--muted); transition:border-color .3s; }
+    footer a { color:var(--accent); }
+    {% block extra_styles %}{% endblock %}
+  </style>
+</head>
+<body>
+
+<canvas id="bg-canvas"></canvas>
+
+<nav class="nav">
+  <a href="/" class="nav-logo">🎮 Pixel<span class="dot">Scope</span></a>
+  <form class="search-wrap" id="sf" action="/search" method="get" autocomplete="off">
+    <input class="search-input" id="si" type="text" name="q" placeholder="Search games…" value="{{ request.args.get('q','') }}">
+    <button class="search-btn" type="submit" aria-label="Search">⌕</button>
+    <div class="drop" id="drop"></div>
+  </form>
+  <nav class="nav-links">
+    <a href="/">Home</a>
+    <a href="/section-page/trending">Trending</a>
+    <a href="/deals">🔥 Deals</a>
+    <a href="/watchlist" id="nav-wl-link">♡ Saved<span class="nav-badge" id="nav-wl-count"></span></a>
+    <a href="/library" id="nav-lib-link">📚 Library<span class="nav-badge" id="nav-lib-count"></span></a>
+    {% if current_user %}
+      {% if current_user.is_admin %}
+        <a href="/admin" style="color:var(--gold);font-weight:600;border:1px solid rgba(245,158,11,.3);background:rgba(245,158,11,.08);">⚙️ Admin</a>
+      {% endif %}
+      <div style="position:relative;display:inline-block;" id="user-menu-wrap">
+        <button onclick="toggleUserMenu()" style="display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600;">
+          👤 {{ current_user.username }}
+        </button>
+        <div id="user-menu" style="display:none;position:absolute;right:0;top:calc(100% + 6px);background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:0 16px 40px rgba(0,0,0,.4);width:160px;z-index:600;">
+          {% if current_user.is_admin %}
+          <a href="/admin" style="display:block;padding:10px 14px;font-size:.82rem;color:var(--gold);transition:background .12s;" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='none'">⚙️ Admin Panel</a>
+          {% endif %}
+          <form method="post" action="/logout">
+            <button type="submit" style="display:block;width:100%;text-align:left;padding:10px 14px;font-size:.82rem;color:var(--red);background:none;border:none;cursor:pointer;" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background='none'">↩ Logout</button>
+          </form>
+        </div>
+      </div>
+    {% else %}
+      <a href="/login" style="background:var(--surface);border:1px solid var(--border);padding:6px 14px;border-radius:6px;font-size:.82rem;font-weight:600;">Login</a>
+    {% endif %}
+    <a href="/game/random" class="nav-pill">🎲 Random</a>
+  </nav>
+  <button class="theme-btn" id="theme-btn" title="Toggle theme">☀️</button>
+</nav>
+
+<main>{% block content %}{% endblock %}</main>
+
+<footer>
+  Game data from <a href="https://rawg.io" target="_blank" rel="noopener noreferrer">RAWG.io</a> &nbsp;·&nbsp;
+  Prices from CheapShark &nbsp;·&nbsp; Exchange rates updated every 6h
+</footer>
+
+<script>
+function toggleUserMenu(){const m=document.getElementById('user-menu');m.style.display=m.style.display==='none'?'block':'none';}
+document.addEventListener('click',function(e){const w=document.getElementById('user-menu-wrap');if(w&&!w.contains(e.target)){const m=document.getElementById('user-menu');if(m)m.style.display='none';}});
+
+/* === THEME === */
+(function(){
+  const btn=document.getElementById('theme-btn');
+  function apply(t){document.body.classList.toggle('light',t==='light');btn.textContent=t==='light'?'🌙':'☀️';}
+  apply(localStorage.getItem('ps-theme')||'dark');
+  btn.addEventListener('click',function(){const n=document.body.classList.contains('light')?'dark':'light';localStorage.setItem('ps-theme',n);apply(n);});
+})();
+
+/* === BG ANIMATION === */
+(function(){
+  const cv=document.getElementById('bg-canvas'),cx=cv.getContext('2d');
+  let W,H,stars=[];
+  const mouse={x:-9999,y:-9999},cur={x:-9999,y:-9999};
+  const BLOBS=[{ox:.18,oy:.25,r:.38,h:250,p:0},{ox:.78,oy:.68,r:.30,h:272,p:2.1},{ox:.52,oy:.12,r:.24,h:228,p:4.3},{ox:.25,oy:.80,r:.26,h:260,p:1.5}];
+  function initStars(){stars=Array.from({length:140},()=>({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.3+.4,twP:Math.random()*Math.PI*2,twS:.018+Math.random()*.04,bo:.2+Math.random()*.65}));}
+  function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;initStars();}
+  let shoot=null,nextShoot=4000;
+  function draw(t){
+    cx.clearRect(0,0,W,H);const light=document.body.classList.contains('light');
+    if(mouse.x>-100){cur.x+=(mouse.x-cur.x)*.07;cur.y+=(mouse.y-cur.y)*.07;}
+    cx.globalCompositeOperation='screen';
+    BLOBS.forEach(b=>{const bx=(b.ox+Math.sin(t*.00018+b.p)*.13)*W,by=(b.oy+Math.cos(t*.00014+b.p)*.10)*H,br=b.r*Math.min(W,H);
+      const g=cx.createRadialGradient(bx,by,0,bx,by,br),a=light?.055:.13;
+      g.addColorStop(0,`hsla(${b.h},78%,58%,${a})`);g.addColorStop(.55,`hsla(${b.h+18},68%,46%,${a*.35})`);g.addColorStop(1,`hsla(${b.h},60%,38%,0)`);
+      cx.fillStyle=g;cx.beginPath();cx.arc(bx,by,br,0,Math.PI*2);cx.fill();});
+    cx.globalCompositeOperation='source-over';
+    if(cur.x>0&&cur.x<W+100){const cg=cx.createRadialGradient(cur.x,cur.y,0,cur.x,cur.y,170);cg.addColorStop(0,`rgba(99,102,241,${light?.05:.13})`);cg.addColorStop(1,'rgba(99,102,241,0)');cx.fillStyle=cg;cx.beginPath();cx.arc(cur.x,cur.y,170,0,Math.PI*2);cx.fill();}
+    const sa=light?.55:1;
+    stars.forEach(s=>{s.twP+=s.twS;const tw=.6+.4*Math.sin(s.twP);
+      const dx=cur.x-s.x,dy=cur.y-s.y,d=Math.sqrt(dx*dx+dy*dy),near=d<130&&cur.x>-100;
+      if(near){s.x+=(dx/d)*.28;s.y+=(dy/d)*.28;const sg=cx.createRadialGradient(s.x,s.y,0,s.x,s.y,s.r*7);sg.addColorStop(0,`rgba(160,170,255,${(1-d/130)*.55*sa})`);sg.addColorStop(1,'rgba(160,170,255,0)');cx.fillStyle=sg;cx.beginPath();cx.arc(s.x,s.y,s.r*7,0,Math.PI*2);cx.fill();}
+      cx.beginPath();cx.arc(s.x,s.y,s.r*(near?1.5:1),0,Math.PI*2);cx.fillStyle=`rgba(215,220,255,${Math.min(s.bo*tw*sa*(near?1.6:1),1)})`;cx.fill();});
+    if(t>nextShoot&&!shoot){shoot={x:Math.random()*W*.5,y:Math.random()*H*.35,vx:11+Math.random()*8,vy:4+Math.random()*6,len:85+Math.random()*65,o:1};nextShoot=t+5000+Math.random()*9000;}
+    if(shoot){shoot.x+=shoot.vx;shoot.y+=shoot.vy;shoot.o-=.016;if(shoot.o>0&&shoot.x<W&&shoot.y<H){const spd=Math.sqrt(shoot.vx**2+shoot.vy**2),sg=cx.createLinearGradient(shoot.x-shoot.vx/spd*shoot.len,shoot.y-shoot.vy/spd*shoot.len,shoot.x,shoot.y);sg.addColorStop(0,'rgba(255,255,255,0)');sg.addColorStop(1,`rgba(255,255,255,${shoot.o*(light?.5:.92)})`);cx.beginPath();cx.moveTo(shoot.x-shoot.vx/spd*shoot.len,shoot.y-shoot.vy/spd*shoot.len);cx.lineTo(shoot.x,shoot.y);cx.strokeStyle=sg;cx.lineWidth=1.8;cx.stroke();cx.beginPath();cx.arc(shoot.x,shoot.y,2.2,0,Math.PI*2);cx.fillStyle=`rgba(255,255,255,${shoot.o})`;cx.fill();}else{shoot=null;}}
+    requestAnimationFrame(draw);}
+  resize();window.addEventListener('resize',resize);
+  window.addEventListener('mousemove',e=>{mouse.x=e.clientX;mouse.y=e.clientY;});
+  window.addEventListener('mouseleave',()=>{mouse.x=-9999;mouse.y=-9999;});
+  requestAnimationFrame(draw);
+})();
+
+/* === WATCHLIST === */
+function wlKey(id){return'ps_wl_'+id;}
+function inWatchlist(id){return!!localStorage.getItem(wlKey(id));}
+function addToWatchlist(g){localStorage.setItem(wlKey(g.id),JSON.stringify({...g,addedAt:Date.now()}));}
+function removeFromWatchlist(id){localStorage.removeItem(wlKey(id));}
+function getWatchlist(){const games=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('ps_wl_')){try{games.push(JSON.parse(localStorage.getItem(k)));}catch(e){}}}return games.sort((a,b)=>(b.addedAt||0)-(a.addedAt||0));}
+function updateNavWl(){const c=getWatchlist().length,el=document.getElementById('nav-wl-count'),lk=document.getElementById('nav-wl-link');if(el){el.textContent=c||'';el.style.display=c?'flex':'none';}if(lk)lk.firstChild.textContent=c>0?'♥ Saved':'♡ Saved';}
+function toggleWatchlist(e,btn){e.preventDefault();e.stopPropagation();const id=btn.dataset.id;if(inWatchlist(id)){removeFromWatchlist(id);btn.textContent='♡';btn.classList.remove('active');}else{addToWatchlist({id:btn.dataset.id,name:btn.dataset.name,image:btn.dataset.image||null,rating:btn.dataset.rating?parseFloat(btn.dataset.rating):null,genres:btn.dataset.genres||'',released:btn.dataset.released||''});btn.textContent='♥';btn.classList.add('active');btn.classList.add('pop');setTimeout(()=>btn.classList.remove('pop'),300);}updateNavWl();}
+function initHearts(){document.querySelectorAll('.heart-btn').forEach(b=>{if(inWatchlist(b.dataset.id)){b.textContent='♥';b.classList.add('active');}});}
+
+/* === LIBRARY === */
+const LIB_STATUSES={want:{label:'Want to Play',icon:'🔖',color:'#0284c7'},playing:{label:'Playing',icon:'🎮',color:'#16a34a'},completed:{label:'Completed',icon:'✓',color:'#7c3aed'}};
+function libKey(id){return'ps_lib_'+id;}
+function getLibEntry(id){try{return JSON.parse(localStorage.getItem(libKey(id)));}catch(e){return null;}}
+function setLibStatus(id,status,gameData){if(!status){localStorage.removeItem(libKey(id));}else{localStorage.setItem(libKey(id),JSON.stringify({...gameData,status,updatedAt:Date.now()}));}}
+function getLibrary(){const items=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith('ps_lib_')){try{items.push(JSON.parse(localStorage.getItem(k)));}catch(e){}}}return items.sort((a,b)=>(b.updatedAt||0)-(a.updatedAt||0));}
+function updateNavLib(){const c=getLibrary().length,el=document.getElementById('nav-lib-count');if(el){el.textContent=c||'';el.style.display=c?'flex':'none';}}
+function toggleLibDrop(e,btn){e.preventDefault();e.stopPropagation();document.querySelectorAll('.lib-drop.open').forEach(d=>{if(d!==btn.nextElementSibling)d.classList.remove('open');});btn.nextElementSibling.classList.toggle('open');}
+function setLibFromCard(e,btn,status){e.preventDefault();e.stopPropagation();const id=btn.dataset.id;const gd={id,name:btn.dataset.name,image:btn.dataset.image||null,rating:btn.dataset.rating?parseFloat(btn.dataset.rating):null,genres:btn.dataset.genres||'',released:btn.dataset.released||''};setLibStatus(id,status,gd);document.querySelectorAll(`.lib-btn[data-id="${id}"]`).forEach(b=>applyLibBtn(b,status));document.querySelectorAll('.lib-drop.open').forEach(d=>d.classList.remove('open'));updateNavLib();}
+function applyLibBtn(btn,status){const info=status?LIB_STATUSES[status]:null;btn.textContent=info?info.icon:'+';btn.title=info?info.label:'Add to Library';btn.style.background=info?info.color:'rgba(0,0,0,.65)';const wrap=btn.parentElement;if(wrap&&wrap.classList.contains('lib-wrap')){if(info)wrap.classList.add('has-status');else wrap.classList.remove('has-status');}}
+function initLibBtns(){document.querySelectorAll('.lib-btn').forEach(btn=>{const e=getLibEntry(btn.dataset.id);if(e&&e.status)applyLibBtn(btn,e.status);});}
+document.addEventListener('click',()=>document.querySelectorAll('.lib-drop.open').forEach(d=>d.classList.remove('open')));
+document.addEventListener('DOMContentLoaded',()=>{initHearts();initLibBtns();updateNavWl();updateNavLib();});
+
+/* === SEARCH SUGGESTIONS === */
+(function(){
+  const si=document.getElementById('si'),drop=document.getElementById('drop'),sf=document.getElementById('sf');
+  if(!si)return;
+  let t,lastQ='';
+  function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+  function show(games){if(!games.length){drop.classList.remove('open');return;}drop.innerHTML=games.map(g=>`<a class="drop-item" href="/game/${g.id}">${g.image?`<img class="drop-thumb" src="${g.image}" alt="" loading="lazy">`:`<div class="drop-thumb"></div>`}<div class="drop-info"><div class="drop-name">${esc(g.name)}</div><div class="drop-meta">${[g.released,g.genres].filter(Boolean).join(' · ')}</div></div></a>`).join('');drop.classList.add('open');}
+  si.addEventListener('input',function(){const q=this.value.trim();clearTimeout(t);if(q.length<2){drop.classList.remove('open');return;}if(q===lastQ)return;t=setTimeout(()=>{lastQ=q;fetch('/search/games?q='+encodeURIComponent(q)).then(r=>r.json()).then(d=>{if(Array.isArray(d))show(d);}).catch(()=>{});},240);});
+  document.addEventListener('click',e=>{if(!sf.contains(e.target))drop.classList.remove('open');});
+})();
+
+/* === CARD RENDERER === */
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function libBtnHtml(id,name,image,rating,genres,released){
+  const entry=getLibEntry(id);const status=entry?entry.status:null;const info=status?LIB_STATUSES[status]:null;
+  const style=info?`background:${info.color}`:'';const icon=info?info.icon:'+';const title=info?info.label:'Add to Library';const hasStatus=info?'has-status':'';
+  const n=escH(name||''),img=image||'',rat=rating||'',gen=escH(genres||''),rel=released||'';
+  return `<div class="lib-wrap ${hasStatus}"><button class="lib-btn" data-id="${id}" data-name="${n}" data-image="${img}" data-rating="${rat}" data-genres="${gen}" data-released="${rel}" style="${style}" title="${title}" onclick="toggleLibDrop(event,this)">${icon}</button><div class="lib-drop"><button onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,'want')">🔖 Want to Play</button><button onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,'playing')">🎮 Playing</button><button onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,'completed')">✓ Completed</button><button class="lib-remove" onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,null)">✕ Remove</button></div></div>`;
+}
+window.mkCard=function(g,badge){
+  const b=badge||(g.award_label?`<span class="card-badge">${escH(g.award_label)}</span>`:'');
+  const imgH=g.image?`<img src="${g.image}" alt="${escH(g.name||'')}" loading="lazy">`:`<div class="card-placeholder">🎮</div>`;
+  const parts=[g.released,g.genres].filter(Boolean);const isWL=inWatchlist(g.id);
+  const heart=`<button class="heart-btn ${isWL?'active':''}" data-id="${g.id}" data-name="${escH(g.name||'')}" data-image="${g.image||''}" data-rating="${g.rating||''}" data-genres="${escH(g.genres||'')}" data-released="${g.released||''}" onclick="toggleWatchlist(event,this)">${isWL?'♥':'♡'}</button>`;
+  const lib=libBtnHtml(g.id,g.name,g.image,g.rating,g.genres,g.released);
+  return`<a class="card" href="/game/${g.id}"><div class="card-img">${imgH}${b}${lib}${heart}</div><div class="card-body"><div class="card-title">${escH(g.name||'')}</div><div class="card-sub">${parts.join(' · ')||'&nbsp;'}</div></div></a>`;
+};
+</script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

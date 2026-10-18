@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Game Deals — Best Sales Right Now · PixelScope{% endblock %}
+
+{% block extra_styles %}
+.deals-header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 24px 28px; transition: background .3s, border-color .3s;
+}
+.deals-header h1 { font-size: 1.5rem; font-weight: 800; margin-bottom: 16px; display: flex; align-items: center; gap: 10px; }
+.filter-bar { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+.filter-group { display: flex; flex-direction: column; gap: 5px; }
+.filter-label { font-size: .7rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .07em; }
+.filter-select { background: var(--card); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 7px; font-size: .82rem; outline: none; transition: border-color .2s; min-width: 130px; cursor: pointer; }
+.filter-select:focus { border-color: var(--accent); }
+.filter-select option { background: var(--card); }
+.deals-body { padding: 32px 0 64px; }
+.deals-count { font-size: .82rem; color: var(--muted); margin-bottom: 20px; }
+.deals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 18px; }
+@media(max-width:600px){ .deals-grid { grid-template-columns: 1fr; } }
+
+.deal-card {
+  background: var(--card); border: 1px solid var(--border); border-radius: var(--r);
+  overflow: hidden; transition: transform .2s, box-shadow .2s;
+  display: flex; flex-direction: column;
+}
+.deal-card:hover { transform: translateY(-3px); box-shadow: 0 12px 32px rgba(0,0,0,.35); }
+.deal-card-img {
+  position: relative; height: 130px; overflow: hidden; background: var(--surface);
+}
+.deal-card-img img { width: 100%; height: 100%; object-fit: cover; transition: transform .3s; }
+.deal-card:hover .deal-card-img img { transform: scale(1.05); }
+.deal-card-img .no-img { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-size: 3rem; background: linear-gradient(135deg, var(--placeholder-from), var(--placeholder-to)); }
+.savings-badge {
+  position: absolute; top: 8px; left: 8px;
+  background: var(--green); color: #fff;
+  font-size: .75rem; font-weight: 800; padding: 3px 8px; border-radius: 5px;
+}
+.best-price-badge {
+  position: absolute; top: 8px; right: 8px;
+  background: linear-gradient(135deg, #15803d, #16a34a); color: #fff;
+  font-size: .65rem; font-weight: 700; padding: 3px 7px; border-radius: 4px;
+}
+.free-badge {
+  position: absolute; top: 8px; left: 8px;
+  background: var(--accent); color: #fff;
+  font-size: .75rem; font-weight: 800; padding: 3px 8px; border-radius: 5px;
+}
+.deal-card-body { padding: 14px; flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.deal-title { font-size: .9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.deal-store { font-size: .7rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; }
+.deal-price-row { display: flex; align-items: baseline; gap: 8px; margin-top: 2px; }
+.deal-price { font-size: 1.2rem; font-weight: 800; }
+.deal-price.free { color: var(--green); }
+.deal-orig { font-size: .8rem; color: var(--muted); text-decoration: line-through; }
+.deal-meta { display: flex; align-items: center; gap: 10px; margin-top: auto; padding-top: 8px; border-top: 1px solid var(--border); }
+.deal-score { font-size: .75rem; font-weight: 600; }
+.deal-score.mc { color: #6db33f; }
+.deal-score.steam { color: #1a9fff; }
+.deal-btn {
+  display: block; width: 100%; padding: 9px; border-radius: 7px;
+  background: var(--accent); color: #fff; text-align: center;
+  font-size: .82rem; font-weight: 600; margin-top: 10px;
+  transition: opacity .2s;
+}
+.deal-btn:hover { opacity: .85; }
+.empty-state { text-align: center; padding: 80px 20px; }
+.empty-state .icon { font-size: 3.5rem; margin-bottom: 16px; }
+{% endblock %}
+
+{% block content %}
+<div class="deals-header">
+  <div class="container">
+    <h1>🔥 Live Game Deals</h1>
+    <form class="filter-bar" method="get" action="/deals">
+      <div class="filter-group">
+        <span class="filter-label">Store</span>
+        <select name="store" class="filter-select">
+          <option value="">All Stores</option>
+          <option value="1"  {% if filters.store == '1'  %}selected{% endif %}>Steam</option>
+          <option value="5"  {% if filters.store == '5'  %}selected{% endif %}>GOG</option>
+          <option value="11" {% if filters.store == '11' %}selected{% endif %}>Epic Games</option>
+          <option value="6"  {% if filters.store == '6'  %}selected{% endif %}>Nintendo eShop</option>
+          <option value="2"  {% if filters.store == '2'  %}selected{% endif %}>Xbox Store</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Min Discount</span>
+        <select name="min_disc" class="filter-select">
+          <option value="0"  {% if filters.min_disc == '0'  %}selected{% endif %}>Any</option>
+          <option value="25" {% if filters.min_disc == '25' %}selected{% endif %}>25%+</option>
+          <option value="50" {% if filters.min_disc == '50' %}selected{% endif %}>50%+</option>
+          <option value="70" {% if filters.min_disc == '70' %}selected{% endif %}>70%+</option>
+          <option value="90" {% if filters.min_disc == '90' %}selected{% endif %}>90%+</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Min Steam Rating</span>
+        <select name="min_steam" class="filter-select">
+          <option value="0"  {% if filters.min_steam == '0'  %}selected{% endif %}>Any</option>
+          <option value="60" {% if filters.min_steam == '60' %}selected{% endif %}>60%+</option>
+          <option value="70" {% if filters.min_steam == '70' %}selected{% endif %}>70%+</option>
+          <option value="80" {% if filters.min_steam == '80' %}selected{% endif %}>80%+</option>
+          <option value="90" {% if filters.min_steam == '90' %}selected{% endif %}>90%+</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <span class="filter-label">Sort By</span>
+        <select name="sort" class="filter-select">
+          <option value="Savings"   {% if filters.sort == 'Savings'   %}selected{% endif %}>Biggest Discount</option>
+          <option value="Price"     {% if filters.sort == 'Price'     %}selected{% endif %}>Lowest Price</option>
+          <option value="Metacritic"{% if filters.sort == 'Metacritic'%}selected{% endif %}>Metacritic Score</option>
+          <option value="Reviews"   {% if filters.sort == 'Reviews'   %}selected{% endif %}>Steam Reviews</option>
+          <option value="recent"    {% if filters.sort == 'recent'    %}selected{% endif %}>Recently Added</option>
+        </select>
+      </div>
+      <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Apply</button>
+      <a href="/deals" class="btn btn-ghost" style="align-self:flex-end;">Reset</a>
+    </form>
+  </div>
+</div>
+
+<div class="deals-body container">
+  {% if deals %}
+    <p class="deals-count">{{ deals|length }} deals found{% if rate %} · Prices in INR (1 USD ≈ ₹{{ rate|round|int }}){% endif %}</p>
+    <div class="deals-grid">
+      {% for d in deals %}
+      <div class="deal-card">
+        <div class="deal-card-img">
+          {% if d.thumb %}
+            <img src="{{ d.thumb }}" alt="{{ d.title }}" loading="lazy">
+          {% else %}
+            <div class="no-img">🎮</div>
+          {% endif %}
+          {% if d.is_free %}
+            <span class="free-badge">FREE</span>
+          {% elif d.savings_pct %}
+            <span class="savings-badge">-{{ d.savings_pct }}%</span>
+          {% endif %}
+          {% if d.is_best_price %}
+            <span class="best-price-badge">🏷 All-Time Low</span>
+          {% endif %}
+        </div>
+        <div class="deal-card-body">
+          <div class="deal-title" title="{{ d.title }}">{{ d.title }}</div>
+          <div class="deal-store">{{ d.store_name }}</div>
+          <div class="deal-price-row">
+            {% if d.is_free %}
+              <span class="deal-price free">FREE</span>
+            {% elif d.sale_inr %}
+              <span class="deal-price">₹{{ "{:,}".format(d.sale_inr) }}</span>
+              {% if d.normal_inr %}<span class="deal-orig">₹{{ "{:,}".format(d.normal_inr) }}</span>{% endif %}
+            {% else %}
+              <span class="deal-price">$0.00</span>
+            {% endif %}
+          </div>
+          {% if d.metacritic or d.steam_pct %}
+          <div class="deal-meta">
+            {% if d.metacritic and d.metacritic != '0' %}
+              <span class="deal-score mc">MC {{ d.metacritic }}</span>
+            {% endif %}
+            {% if d.steam_pct and d.steam_pct != '0' %}
+              <span class="deal-score steam">Steam {{ d.steam_pct }}%</span>
+            {% endif %}
+          </div>
+          {% endif %}
+          <a class="deal-btn" href="https://www.cheapshark.com/redirect?dealID={{ d.deal_id }}" target="_blank" rel="noopener noreferrer">
+            Get Deal →
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <div class="icon">😔</div>
+      <p>No deals found with those filters. Try adjusting them.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

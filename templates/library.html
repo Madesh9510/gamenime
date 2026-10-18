@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}My Library · PixelScope{% endblock %}
+
+{% block extra_styles %}
+.lib-page-header {
+  background: var(--surface); border-bottom: 1px solid var(--border);
+  padding: 28px; transition: background .3s, border-color .3s;
+}
+.lib-page-title { font-size: 1.6rem; font-weight: 800; margin-bottom: 18px; }
+.lib-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.lib-tab {
+  padding: 8px 18px; border-radius: 8px; border: 1px solid var(--border);
+  background: var(--card); color: var(--muted);
+  font-size: .85rem; font-weight: 600; cursor: pointer;
+  transition: all .15s; display: flex; align-items: center; gap: 7px;
+}
+.lib-tab:hover { border-color: var(--accent); color: var(--text); }
+.lib-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.lib-tab-count {
+  background: rgba(255,255,255,.25); color: inherit;
+  font-size: .7rem; font-weight: 700;
+  padding: 1px 6px; border-radius: 10px; min-width: 20px; text-align: center;
+}
+.lib-tab:not(.active) .lib-tab-count { background: var(--surface); color: var(--muted); }
+.lib-body { padding: 32px 0 64px; }
+.lib-empty {
+  text-align: center; padding: 80px 20px;
+}
+.lib-empty .icon { font-size: 4rem; margin-bottom: 18px; }
+.lib-empty h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 10px; }
+.lib-empty p { color: var(--muted); margin-bottom: 24px; font-size: .9rem; }
+.lib-card-wrap { position: relative; }
+.lib-remove-btn {
+  position: absolute; top: 8px; right: 8px; z-index: 5;
+  width: 26px; height: 26px; border-radius: 50%;
+  background: rgba(239,68,68,.85); color: #fff; border: none;
+  font-size: .68rem; font-weight: 700; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .15s, transform .15s;
+}
+.lib-card-wrap:hover .lib-remove-btn { opacity: 1; }
+.lib-remove-btn:hover { transform: scale(1.1); }
+.status-bar {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 20px; flex-wrap: wrap;
+}
+.status-pill {
+  padding: 4px 12px; border-radius: 20px; font-size: .75rem; font-weight: 600;
+  border: 1px solid transparent;
+}
+.status-pill.playing   { background: rgba(22,163,74,.15);  color: #16a34a; border-color: rgba(22,163,74,.3); }
+.status-pill.completed { background: rgba(124,58,237,.15); color: #7c3aed; border-color: rgba(124,58,237,.3); }
+.status-pill.want      { background: rgba(2,132,199,.15);  color: #0284c7; border-color: rgba(2,132,199,.3); }
+{% endblock %}
+
+{% block content %}
+<div class="lib-page-header">
+  <div class="container">
+    <div class="lib-page-title">📚 My Library</div>
+    <div class="lib-tabs">
+      <button class="lib-tab active" id="tab-playing"   onclick="showTab('playing')">
+        🎮 Playing <span class="lib-tab-count" id="cnt-playing">0</span>
+      </button>
+      <button class="lib-tab" id="tab-completed" onclick="showTab('completed')">
+        ✓ Completed <span class="lib-tab-count" id="cnt-completed">0</span>
+      </button>
+      <button class="lib-tab" id="tab-want"      onclick="showTab('want')">
+        🔖 Want to Play <span class="lib-tab-count" id="cnt-want">0</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="lib-body container">
+  <div id="lib-empty" class="lib-empty" style="display:none">
+    <div class="icon" id="empty-icon">🎮</div>
+    <h2 id="empty-title">Nothing here yet</h2>
+    <p id="empty-msg">Mark games as Playing, Completed or Want to Play to see them here.</p>
+    <a href="/" class="btn btn-primary">Browse Games</a>
+  </div>
+  <div class="grid-4" id="lib-grid" style="display:none"></div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentTab = 'playing';
+
+const EMPTY_MSGS = {
+  playing:   { icon:'🎮', title:"You're not playing anything",  msg:"Mark a game as Playing to track it here." },
+  completed: { icon:'🏆', title:"No completed games yet",       msg:"Finish a game and mark it Completed." },
+  want:      { icon:'🔖', title:"Your want list is empty",      msg:"Browse games and mark ones you want to play." },
+};
+
+function showTab(tab) {
+  currentTab = tab;
+  ['playing','completed','want'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === tab);
+  });
+  renderLib();
+}
+
+function renderLib() {
+  const all = getLibrary();
+  const byStatus = { playing: [], completed: [], want: [] };
+  all.forEach(g => { if (byStatus[g.status]) byStatus[g.status].push(g); });
+
+  // Update counts
+  Object.keys(byStatus).forEach(s => {
+    const el = document.getElementById('cnt-'+s);
+    if (el) el.textContent = byStatus[s].length;
+  });
+
+  const games = byStatus[currentTab] || [];
+  const grid  = document.getElementById('lib-grid');
+  const empty = document.getElementById('lib-empty');
+
+  if (!games.length) {
+    grid.style.display  = 'none';
+    empty.style.display = 'block';
+    const m = EMPTY_MSGS[currentTab];
+    document.getElementById('empty-icon').textContent  = m.icon;
+    document.getElementById('empty-title').textContent = m.title;
+    document.getElementById('empty-msg').textContent   = m.msg;
+    return;
+  }
+
+  empty.style.display = 'none';
+  grid.style.display  = 'grid';
+  grid.innerHTML = games.map(g => `
+    <div class="lib-card-wrap">
+      <a class="card" href="/game/${g.id}">
+        <div class="card-img">
+          ${g.image ? `<img src="${g.image}" alt="${escH(g.name||'')}" loading="lazy">` : `<div class="card-placeholder">🎮</div>`}
+          ${g.rating ? `<span class="card-rating">★ ${g.rating}</span>` : ''}
+        </div>
+        <div class="card-body">
+          <div class="card-title">${escH(g.name||'')}</div>
+          <div class="card-sub">${[g.released, g.genres].filter(Boolean).join(' · ') || '&nbsp;'}</div>
+        </div>
+      </a>
+      <button class="lib-remove-btn" onclick="removeFromLib('${g.id}')" title="Remove">✕</button>
+    </div>`).join('');
+}
+
+function removeFromLib(id) {
+  setLibStatus(id, null, {});
+  updateNavLib();
+  renderLib();
+}
+
+document.addEventListener('DOMContentLoaded', renderLib);
+</script>
+{% endblock %}

@@ -1,0 +1,24 @@
+<a class="card" href="/game/{{ game.id }}">
+  <div class="card-media">
+    {% if game.image %}
+    <img src="{{ game.image }}" alt="{{ game.name }}" loading="lazy"
+      onload="this.classList.add('loaded')"
+      onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'no-image',textContent:'No image'}))">
+    {% else %}
+    <div class="no-image">No image</div>
+    {% endif %}
+    {% if game.award_label %}<span class="top-badge award-badge">🏆 {{ game.award_label }}</span>{% endif %}
+    <button class="fav-btn"
+      data-id="{{ game.id }}"
+      data-name="{{ game.name }}"
+      data-image="{{ game.image or '' }}"
+      data-released="{{ game.released or '' }}"
+      data-genres="{{ game.genres or '' }}"
+      data-publisher="{{ game.publisher or '' }}">♥</button>
+  </div>
+  <div class="card-body">
+    <h3>{{ game.name }}</h3>
+    {% if game.publisher %}<p class="publisher">{{ game.publisher }}</p>{% endif %}
+    <p class="meta">{{ game.released or "Unknown" }}{% if game.genres %} · {{ game.genres }}{% endif %}</p>
+  </div>
+</a>

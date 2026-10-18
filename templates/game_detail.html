@@ -1,177 +1,371 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>{{ game.name }} — PixelScope</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-</head>
-<body>
+{% extends "base.html" %}
+{% block title %}{{ game.name }} · PixelScope{% endblock %}
 
-<div class="glow-backdrop" id="glowBackdrop"></div>
+{% block extra_styles %}
+.hero-banner { position:relative; height:400px; overflow:hidden; background:#12062e; }
+.hero-banner-img { width:100%; height:100%; object-fit:cover; filter:brightness(.4); }
+.hero-banner-placeholder { width:100%; height:100%; background:linear-gradient(135deg,#1a0a3e 0%,#0a2040 100%); display:flex; align-items:center; justify-content:center; font-size:7rem; opacity:.25; }
+.hero-gradient { position:absolute; inset:0; background:linear-gradient(to top, var(--bg) 0%, transparent 55%); }
+.hero-content { position:absolute; bottom:0; left:0; right:0; padding:28px; }
+.hero-content h1 { font-size:clamp(1.5rem,3.5vw,2.4rem); font-weight:800; text-shadow:0 2px 14px rgba(0,0,0,.8); line-height:1.2; color:#fff; }
+.hero-meta { display:flex; flex-wrap:wrap; align-items:center; gap:8px; margin-top:12px; }
+.hero-chip { background:rgba(0,0,0,.65); backdrop-filter:blur(6px); padding:5px 12px; border-radius:20px; font-size:.78rem; color:#e8e8e8; }
+.hero-chip.rating { color:var(--gold); font-weight:700; font-size:.9rem; }
+.hero-save-btn { background:rgba(0,0,0,.6); backdrop-filter:blur(6px); border:1px solid rgba(255,255,255,.25); color:#fff; padding:5px 14px; border-radius:20px; font-size:.82rem; font-weight:600; cursor:pointer; transition:background .2s,border-color .2s; }
+.hero-save-btn:hover { background:rgba(0,0,0,.85); }
+.hero-save-btn.saved { color:#f87171; border-color:rgba(248,113,113,.4); }
 
-<a href="/" class="back-link">
-  <svg viewBox="0 0 24 24" fill="none" width="18" height="18"><path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-  Back to search
-</a>
+.detail-wrap { max-width:1280px; margin:0 auto; padding:36px 28px 64px; display:grid; grid-template-columns:1fr 310px; gap:32px; }
+@media(max-width:900px){ .detail-wrap{ grid-template-columns:1fr; } }
 
-<div class="detail-banner">
-  {% if game.image %}
-  <img class="banner-img" src="{{ game.image }}" alt="{{ game.name }}">
-  {% endif %}
-  <div class="detail-banner-overlay"></div>
+.section-block { margin-bottom:36px; }
+.section-block h2 { font-size:.78rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.09em; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+.desc-text { font-size:.9rem; line-height:1.78; color:var(--muted); }
+.desc-text.clamp { display:-webkit-box; -webkit-line-clamp:6; -webkit-box-orient:vertical; overflow:hidden; }
+.read-more-btn { background:none; border:none; cursor:pointer; color:var(--accent); font-size:.82rem; margin-top:10px; padding:0; }
+
+.req-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+@media(max-width:600px){ .req-grid{ grid-template-columns:1fr; } }
+.req-box { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); padding:16px; }
+.req-box h3 { font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.07em; margin-bottom:10px; }
+.req-box p { font-size:.78rem; line-height:1.75; color:var(--muted); white-space:pre-wrap; }
+
+.trailer-wrap { border-radius:var(--r); overflow:hidden; aspect-ratio:16/9; }
+.trailer-wrap iframe,.trailer-wrap video { width:100%; height:100%; display:block; border:none; }
+.trailer-placeholder { background:var(--surface); border:1px solid var(--border); border-radius:var(--r); aspect-ratio:16/9; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; cursor:pointer; transition:border-color .2s; position:relative; overflow:hidden; }
+.trailer-placeholder::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,var(--placeholder-from),var(--placeholder-to)); opacity:.5; }
+.trailer-placeholder:hover { border-color:var(--accent); }
+.trailer-placeholder .play-icon { width:72px; height:72px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.8rem; color:#fff; transition:transform .2s; position:relative; z-index:1; box-shadow:0 0 32px rgba(99,102,241,.5); }
+.trailer-placeholder:hover .play-icon { transform:scale(1.12); }
+.trailer-placeholder p { font-size:.95rem; font-weight:600; color:var(--text); position:relative; z-index:1; }
+.trailer-placeholder span { font-size:.78rem; color:var(--muted); position:relative; z-index:1; }
+.trailer-loading { aspect-ratio:16/9; border-radius:var(--r); background:var(--surface); display:flex; align-items:center; justify-content:center; }
+
+.shots-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; }
+@media(max-width:560px){ .shots-grid{ grid-template-columns:repeat(2,1fr); } }
+.shot-thumb { border-radius:6px; overflow:hidden; aspect-ratio:16/9; background:var(--surface); cursor:pointer; }
+.shot-thumb img { width:100%; height:100%; object-fit:cover; transition:opacity .2s; }
+.shot-thumb:hover img { opacity:.75; }
+
+.similar-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:12px; }
+
+.sidebar-box { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:18px; margin-bottom:14px; transition:background .3s,border-color .3s; }
+.sidebar-box h3 { font-size:.7rem; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:14px; }
+.price-badge { display:inline-flex; align-items:center; gap:5px; font-size:.72rem; font-weight:700; letter-spacing:.03em; padding:4px 10px; border-radius:6px; margin-bottom:10px; }
+.price-badge.best { background:linear-gradient(135deg,#15803d,#16a34a); color:#fff; }
+.price-badge.near { background:linear-gradient(135deg,#0369a1,#0284c7); color:#fff; }
+.price-badge.sale { background:linear-gradient(135deg,#b91c1c,#dc2626); color:#fff; }
+.price-row { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; margin-bottom:4px; }
+.price-big { font-size:1.65rem; font-weight:800; }
+.price-orig { font-size:.88rem; color:var(--muted); text-decoration:line-through; }
+.savings-tag { background:var(--green); color:#fff; font-size:.68rem; font-weight:700; padding:2px 7px; border-radius:4px; }
+.price-hist { font-size:.75rem; color:var(--muted); margin-top:6px; display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.price-hist-val { font-weight:600; color:var(--text); }
+.price-note { font-size:.7rem; color:var(--muted); margin-top:4px; }
+.stores { display:flex; flex-direction:column; gap:8px; margin-top:12px; }
+.store-btn { display:block; padding:9px 14px; border-radius:7px; background:var(--surface); border:1px solid var(--border); font-size:.82rem; font-weight:500; transition:border-color .2s,background .2s; }
+.store-btn:hover { border-color:var(--accent); background:var(--accent-dim); }
+.steam-pct-text { font-size:.85rem; font-weight:600; }
+.steam-bar { height:8px; background:var(--surface); border-radius:4px; overflow:hidden; margin:8px 0 5px; }
+.steam-bar-fill { height:100%; border-radius:4px; }
+.steam-sub { font-size:.72rem; color:var(--muted); }
+.platform-list { display:flex; flex-wrap:wrap; gap:6px; }
+.plat { padding:4px 10px; background:var(--surface); border:1px solid var(--border); border-radius:5px; font-size:.72rem; color:var(--muted); }
+.tags-wrap { display:flex; flex-wrap:wrap; gap:6px; }
+
+.lb { position:fixed; inset:0; background:rgba(0,0,0,.9); z-index:9000; display:none; align-items:center; justify-content:center; padding:20px; }
+.lb.open { display:flex; }
+.lb-img { max-width:90vw; max-height:86vh; border-radius:8px; object-fit:contain; }
+.lb-close { position:absolute; top:18px; right:24px; font-size:2rem; color:#fff; cursor:pointer; line-height:1; background:none; border:none; }
+.lb-arrow { position:absolute; top:50%; transform:translateY(-50%); font-size:2rem; color:#fff; cursor:pointer; background:rgba(0,0,0,.45); width:48px; height:48px; display:flex; align-items:center; justify-content:center; border-radius:50%; border:none; }
+.lb-prev { left:16px; } .lb-next { right:16px; }
+
+/* Lib dropdown in hero */
+.hero-lib-wrap { position:relative; display:inline-block; }
+.hero-lib-drop {
+  display:none; position:absolute; bottom:calc(100% + 8px); left:0;
+  background:var(--card); border:1px solid var(--border); border-radius:9px;
+  overflow:hidden; box-shadow:0 10px 30px rgba(0,0,0,.5); width:160px; z-index:20;
+}
+.hero-lib-drop button {
+  display:block; width:100%; text-align:left; padding:9px 13px;
+  font-size:.82rem; color:var(--text); background:none; border:none; cursor:pointer;
+  transition:background .12s;
+}
+.hero-lib-drop button:hover { background:var(--surface); }
+.hero-lib-drop .lib-remove { color:var(--red)!important; }
+{% endblock %}
+
+{% block content %}
+<div class="hero-banner">
+  {% if game.image %}<img class="hero-banner-img" src="{{ game.image }}" alt="{{ game.name }}">
+  {% else %}<div class="hero-banner-placeholder">🎮</div>{% endif %}
+  <div class="hero-gradient"></div>
+  <div class="hero-content container">
+    <button onclick="history.back()" style="background:rgba(0,0,0,.6);backdrop-filter:blur(6px);border:1px solid rgba(255,255,255,.25);color:#fff;padding:5px 14px;border-radius:20px;font-size:.82rem;font-weight:600;cursor:pointer;margin-bottom:12px;transition:background .2s;">← Back</button>
+    <h1>{{ game.name }}</h1>
+    <div class="hero-meta">
+      {% if game.rating %}<span class="hero-chip rating">★ {{ game.rating }} / 5</span>{% endif %}
+      {% if game.released %}<span class="hero-chip">{{ game.released }}</span>{% endif %}
+      {% if game.genres %}<span class="hero-chip">{{ game.genres }}</span>{% endif %}
+      {% if game.publisher %}<span class="hero-chip">{{ game.publisher }}</span>{% endif %}
+      {% if game.esrb %}<span class="hero-chip">{{ game.esrb }}</span>{% endif %}
+      <button class="hero-save-btn" id="detail-wl-btn" onclick="toggleDetailWL()">♡ Save</button>
+      <div class="hero-lib-wrap">
+        <button class="hero-save-btn" id="detail-lib-btn" onclick="toggleDetailLibDrop(event)">📚 Library</button>
+        <div class="hero-lib-drop" id="detail-lib-drop">
+          <button onclick="setDetailLib('want')">🔖 Want to Play</button>
+          <button onclick="setDetailLib('playing')">🎮 Playing</button>
+          <button onclick="setDetailLib('completed')">✓ Completed</button>
+          <button class="lib-remove" onclick="setDetailLib(null)">✕ Remove</button>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<main class="detail-main">
-  <div class="detail-header">
-    <div class="detail-title-row">
-      <h1>{{ game.name }}</h1>
-      <button id="favBtnDetail" class="fav-btn-lg"
-        data-id="{{ game.id }}"
-        data-name="{{ game.name }}"
-        data-image="{{ game.image or '' }}"
-        data-released="{{ game.released or '' }}"
-        data-genres="{{ game.genres or '' }}"
-        data-publisher="{{ game.publisher or '' }}">♥</button>
-    </div>
-    {% if game.publisher %}<p class="studio-credit">{{ game.publisher }}</p>{% endif %}
-    <p class="meta detail-meta">
-      {{ game.released or "Release year unknown" }}
-      {% if game.genres %} · {{ game.genres }}{% endif %}
-      {% if game.esrb %} · <span class="esrb-badge">{{ game.esrb }}</span>{% endif %}
-    </p>
-  </div>
+<div class="detail-wrap">
+  <div>
 
-  <div class="scores-row">
-    <div class="score-card">
-      <span class="score-value">{{ "%.1f"|format(game.rating) if game.rating else "—" }}</span>
-      <span class="score-label">RAWG Community<br>out of 5</span>
+    <div class="section-block">
+      <h2>About</h2>
+      {% if game.description|length > 500 %}
+        <p class="desc-text clamp" id="desc">{{ game.description }}</p>
+        <button class="read-more-btn" id="rmb" onclick="document.getElementById('desc').classList.remove('clamp');this.style.display='none';">Read more ↓</button>
+      {% else %}
+        <p class="desc-text">{{ game.description }}</p>
+      {% endif %}
     </div>
 
-    {% if game.steam_rating %}
-    <div class="score-card steam-card">
-      <span class="score-value">{{ game.steam_rating.positive_pct }}%</span>
-      <span class="score-label">{{ game.steam_rating.description }}<br>{{ "{:,}".format(game.steam_rating.total_reviews) }} Steam reviews</span>
+    <div class="section-block">
+      <h2>PC Requirements</h2>
+      {% if game.requirements %}
+      <div class="req-grid">
+        {% if game.requirements.minimum %}<div class="req-box"><h3>Minimum</h3><p>{{ game.requirements.minimum }}</p></div>{% endif %}
+        {% if game.requirements.recommended %}<div class="req-box"><h3>Recommended</h3><p>{{ game.requirements.recommended }}</p></div>{% endif %}
+      </div>
+      {% else %}
+      <p class="desc-text" style="font-style:italic;">Requirements not available for this game.</p>
+      {% endif %}
+    </div>
+
+    <div class="section-block">
+      <h2>Trailer</h2>
+      <div id="trailer-area">
+        {% if game.trailer and game.trailer.youtube_id %}
+          <div class="trailer-wrap">
+            <iframe src="https://www.youtube-nocookie.com/embed/{{ game.trailer.youtube_id }}?autoplay=1&rel=0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture" allowfullscreen></iframe>
+          </div>
+        {% else %}
+          <div class="trailer-loading"><div class="spinner"></div></div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if game.screenshots %}
+    <div class="section-block">
+      <h2>Screenshots</h2>
+      <div class="shots-grid">
+        {% for src in game.screenshots %}
+        <div class="shot-thumb" onclick="openLb({{ loop.index0 }})">
+          <img src="{{ src }}" alt="Screenshot {{ loop.index }}" loading="lazy">
+        </div>
+        {% endfor %}
+      </div>
     </div>
     {% endif %}
+
+    {% if game.similar %}
+    <div class="section-block">
+      <h2>Similar Games</h2>
+      <div class="similar-grid">
+        {% for g in game.similar %}
+        <a class="card" href="/game/{{ g.id }}">
+          <div class="card-img">
+            {% if g.image %}<img src="{{ g.image }}" alt="{{ g.name }}" loading="lazy">
+            {% else %}<div class="card-placeholder">🎮</div>{% endif %}
+          </div>
+          <div class="card-body">
+            <div class="card-title">{{ g.name }}</div>
+            <div class="card-sub">{{ g.released or '&nbsp;' }}</div>
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
   </div>
 
-  {% if game.platforms %}
-  <div class="chip-row">
-    {% for p in game.platforms %}
-      <span class="chip">{{ p }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
+  <aside>
+    {% if game.pc_price %}
+    <div class="sidebar-box">
+      <h3>PC Price (India)</h3>
+      {% if game.pc_price.is_best_price %}
+        <div class="price-badge best">🏷 All-Time Low Price!</div>
+      {% elif game.pc_price.is_near_low %}
+        <div class="price-badge near">📉 Near Historical Low</div>
+      {% elif game.pc_price.savings_pct and game.pc_price.savings_pct >= 20 %}
+        <div class="price-badge sale">🔥 {{ game.pc_price.savings_pct }}% Off</div>
+      {% endif %}
+      <div class="price-row">
+        <span class="price-big">₹{{ "{:,}".format(game.pc_price.price_inr) }}</span>
+        {% if game.pc_price.normal_price_inr %}
+          <span class="price-orig">₹{{ "{:,}".format(game.pc_price.normal_price_inr) }}</span>
+          {% if game.pc_price.savings_pct and game.pc_price.savings_pct >= 5 %}
+            <span class="savings-tag">-{{ game.pc_price.savings_pct }}%</span>
+          {% endif %}
+        {% endif %}
+      </div>
+      {% if game.pc_price.historical_low_inr %}
+      <div class="price-hist">
+        <span>Historical low:</span>
+        <span class="price-hist-val">₹{{ "{:,}".format(game.pc_price.historical_low_inr) }}</span>
+        {% if game.pc_price.is_best_price %}<span style="color:var(--green);font-size:.7rem;">✓ You're at it!</span>{% endif %}
+      </div>
+      {% endif %}
+      <p class="price-note">Best deal via CheapShark / Steam</p>
+      {% if game.stores %}<div class="stores">{% for s in game.stores %}<a class="store-btn" href="{{ s.url }}" target="_blank" rel="noopener noreferrer">🛒 {{ s.name }}</a>{% endfor %}</div>{% endif %}
+    </div>
+    {% elif game.stores %}
+    <div class="sidebar-box">
+      <h3>Where to Buy</h3>
+      <div class="stores">{% for s in game.stores %}<a class="store-btn" href="{{ s.url }}" target="_blank" rel="noopener noreferrer">🛒 {{ s.name }}</a>{% endfor %}</div>
+    </div>
+    {% endif %}
 
-  {% if game.stores %}
-  <div class="store-row">
-    {% for s in game.stores %}
-      <a class="store-btn" href="{{ s.url }}" target="_blank" rel="noopener">Available on {{ s.name }} ↗</a>
-    {% endfor %}
-  </div>
-  {% endif %}
+    {% if game.steam_rating %}
+    {% set sr=game.steam_rating %}{% set pct=sr.positive_pct %}
+    {% set bc='#22c55e' if pct>=75 else ('#f59e0b' if pct>=50 else '#ef4444') %}
+    <div class="sidebar-box">
+      <h3>Steam Reviews</h3>
+      <div class="steam-pct-text" style="color:{{ bc }}">{{ sr.description }}</div>
+      <div class="steam-bar"><div class="steam-bar-fill" style="width:{{ pct }}%;background:{{ bc }};"></div></div>
+      <div class="steam-sub">{{ pct }}% positive &nbsp;·&nbsp; {{ "{:,}".format(sr.total_reviews) }} reviews</div>
+    </div>
+    {% endif %}
 
-  {% if game.trailer or game.screenshots %}
-  <h2 class="section-title">Trailer &amp; Screenshots</h2>
-  {% endif %}
+    {% if game.platforms %}
+    <div class="sidebar-box">
+      <h3>Platforms</h3>
+      <div class="platform-list">{% for p in game.platforms %}<span class="plat">{{ p }}</span>{% endfor %}</div>
+    </div>
+    {% endif %}
 
-  {% if game.trailer %}
-  <video class="trailer-video" controls poster="{{ game.trailer.preview }}">
-    <source src="{{ game.trailer.video }}" type="video/mp4">
-  </video>
-  {% endif %}
-
-  <a class="youtube-btn" href="https://www.youtube.com/results?search_query={{ (game.name + ' official trailer') | urlencode }}" target="_blank" rel="noopener">
-    ▶ Find trailer on YouTube
-  </a>
-
-  {% if game.screenshots %}
-  <div class="screenshot-strip" id="screenshotStrip">
-    {% for shot in game.screenshots %}
-      <img src="{{ shot }}" alt="{{ game.name }} screenshot" loading="lazy" class="screenshot-thumb">
-    {% endfor %}
-  </div>
-  {% endif %}
-
-  <h2 class="section-title">About</h2>
-  <p class="description">{{ game.description }}</p>
-
-  {% if game.tags %}
-  <h2 class="section-title">Tags</h2>
-  <div class="chip-row tag-row">
-    {% for t in game.tags %}
-      <span class="chip tag-chip">#{{ t }}</span>
-    {% endfor %}
-  </div>
-  {% endif %}
-</main>
-
-<div class="lightbox-overlay" id="lightboxOverlay">
-  <button class="lightbox-close" id="lightboxClose">✕</button>
-  <img id="lightboxImg" src="" alt="Screenshot preview">
+    {% if game.tags %}
+    <div class="sidebar-box">
+      <h3>Tags</h3>
+      <div class="tags-wrap">{% for t in game.tags %}<span class="tag">{{ t }}</span>{% endfor %}</div>
+    </div>
+    {% endif %}
+  </aside>
 </div>
 
-<footer>
-  <p>Ratings from RAWG.io and Steam · Built with Flask</p>
-</footer>
+<div class="lb" id="lb" onclick="if(event.target===this)closeLb()">
+  <button class="lb-close" onclick="closeLb()">✕</button>
+  <button class="lb-arrow lb-prev" onclick="moveLb(-1)">‹</button>
+  <img class="lb-img" id="lb-img" src="" alt="">
+  <button class="lb-arrow lb-next" onclick="moveLb(1)">›</button>
+</div>
+{% endblock %}
 
+{% block extra_scripts %}
 <script>
-document.addEventListener("mousemove", (e) => {
-  const el = document.getElementById("glowBackdrop");
-  el.style.setProperty("--mx", `${e.clientX}px`);
-  el.style.setProperty("--my", `${e.clientY}px`);
+const GAME_NAME = {{ game.name|tojson }};
+const shots     = {{ game.screenshots|tojson }};
+const DETAIL_GAME = {
+  id:       '{{ game.id }}',
+  name:     {{ game.name|tojson }},
+  image:    {{ (game.image or '')|tojson }},
+  rating:   {{ game.rating or 'null' }},
+  genres:   {{ (game.genres or '')|tojson }},
+  released: {{ (game.released or '')|tojson }},
+};
+
+/* watchlist */
+function toggleDetailWL(){
+  const btn=document.getElementById('detail-wl-btn');
+  if(inWatchlist(DETAIL_GAME.id)){
+    removeFromWatchlist(DETAIL_GAME.id);
+    btn.textContent='♡ Save';btn.classList.remove('saved');
+  } else {
+    addToWatchlist(DETAIL_GAME);
+    btn.textContent='♥ Saved';btn.classList.add('saved');
+    btn.classList.add('pop');setTimeout(()=>btn.classList.remove('pop'),300);
+  }
+  updateNavWl();
+}
+
+/* library */
+function toggleDetailLibDrop(e){
+  e.preventDefault();e.stopPropagation();
+  const d=document.getElementById('detail-lib-drop');
+  d.style.display=d.style.display==='block'?'none':'block';
+}
+function setDetailLib(status){
+  setLibStatus(DETAIL_GAME.id,status,DETAIL_GAME);
+  const btn=document.getElementById('detail-lib-btn');
+  if(status&&LIB_STATUSES[status]){
+    const info=LIB_STATUSES[status];
+    btn.textContent=info.icon+' '+info.label;
+  } else {
+    btn.textContent='📚 Library';
+  }
+  document.getElementById('detail-lib-drop').style.display='none';
+  updateNavLib();
+}
+document.addEventListener('click',e=>{
+  const wrap=document.querySelector('.hero-lib-wrap');
+  if(wrap&&!wrap.contains(e.target)){
+    const d=document.getElementById('detail-lib-drop');
+    if(d)d.style.display='none';
+  }
 });
 
-const lightbox = document.getElementById("lightboxOverlay");
-const lightboxImg = document.getElementById("lightboxImg");
-const lightboxClose = document.getElementById("lightboxClose");
-const strip = document.getElementById("screenshotStrip");
-
-if (strip) {
-  strip.addEventListener("click", (e) => {
-    if (e.target.tagName === "IMG") {
-      lightboxImg.src = e.target.src;
-      lightbox.classList.add("open");
-    }
-  });
-}
-
-function closeLightbox() { lightbox.classList.remove("open"); lightboxImg.src = ""; }
-lightboxClose.addEventListener("click", closeLightbox);
-lightbox.addEventListener("click", (e) => { if (e.target === lightbox) closeLightbox(); });
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeLightbox(); });
-
-// ---- Favorite toggle (saved locally in this browser) ----
-const FAV_KEY = "pixelscope_favorites";
-const favBtnDetail = document.getElementById("favBtnDetail");
-
-function getFavorites() {
-  try { return JSON.parse(localStorage.getItem(FAV_KEY) || "{}"); }
-  catch (err) { return {}; }
-}
-
-const favs = getFavorites();
-if (favs[favBtnDetail.dataset.id]) favBtnDetail.classList.add("active");
-
-favBtnDetail.addEventListener("click", () => {
-  const favs = getFavorites();
-  const id = favBtnDetail.dataset.id;
-  if (favs[id]) {
-    delete favs[id];
-    favBtnDetail.classList.remove("active");
-  } else {
-    favs[id] = {
-      id, name: favBtnDetail.dataset.name, image: favBtnDetail.dataset.image,
-      released: favBtnDetail.dataset.released, genres: favBtnDetail.dataset.genres,
-      publisher: favBtnDetail.dataset.publisher,
-    };
-    favBtnDetail.classList.add("active");
+document.addEventListener('DOMContentLoaded',()=>{
+  const wlBtn=document.getElementById('detail-wl-btn');
+  if(inWatchlist(DETAIL_GAME.id)){wlBtn.textContent='♥ Saved';wlBtn.classList.add('saved');}
+  const entry=getLibEntry(DETAIL_GAME.id);
+  if(entry&&entry.status&&LIB_STATUSES[entry.status]){
+    const info=LIB_STATUSES[entry.status];
+    document.getElementById('detail-lib-btn').textContent=info.icon+' '+info.label;
   }
-  localStorage.setItem(FAV_KEY, JSON.stringify(favs));
+  {% if not (game.trailer and game.trailer.youtube_id) %}loadTrailer(true);{% endif %}
+});
+
+/* trailer */
+function loadTrailer(autoTrigger=false){
+  const area=document.getElementById('trailer-area');
+  area.innerHTML='<div class="trailer-loading"><div class="spinner"></div></div>';
+  fetch('/api/trailer?name='+encodeURIComponent(GAME_NAME))
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.video_id){
+        area.innerHTML=`<div class="trailer-wrap"><iframe src="https://www.youtube-nocookie.com/embed/${data.video_id}?autoplay=1&rel=0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>`;
+      } else if(!autoTrigger){
+        window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(GAME_NAME+' official trailer'),'_blank');
+        area.innerHTML=`<div class="trailer-placeholder" onclick="loadTrailer()"><div class="play-icon">▶</div><p>Open on YouTube</p><span>Click to search</span></div>`;
+      } else {
+        area.innerHTML=`<div class="trailer-placeholder" onclick="loadTrailer()"><div class="play-icon">▶</div><p>${GAME_NAME}</p><span>Click to search on YouTube</span></div>`;
+      }
+    })
+    .catch(()=>{
+      if(!autoTrigger) window.open('https://www.youtube.com/results?search_query='+encodeURIComponent(GAME_NAME+' official trailer'),'_blank');
+      area.innerHTML=`<div class="trailer-placeholder" onclick="loadTrailer()"><div class="play-icon">▶</div><p>${GAME_NAME}</p><span>Click to search on YouTube</span></div>`;
+    });
+}
+
+/* lightbox */
+let lbIdx=0;
+function openLb(i){lbIdx=i;document.getElementById('lb-img').src=shots[i];document.getElementById('lb').classList.add('open');document.body.style.overflow='hidden';}
+function closeLb(){document.getElementById('lb').classList.remove('open');document.body.style.overflow='';}
+function moveLb(d){lbIdx=(lbIdx+d+shots.length)%shots.length;document.getElementById('lb-img').src=shots[lbIdx];}
+document.addEventListener('keydown',e=>{
+  if(!document.getElementById('lb').classList.contains('open'))return;
+  if(e.key==='ArrowLeft')moveLb(-1);
+  else if(e.key==='ArrowRight')moveLb(1);
+  else if(e.key==='Escape')closeLb();
 });
 </script>
-</body>
-</html>
+{% endblock %}

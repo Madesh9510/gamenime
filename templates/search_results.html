@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}{% if query %}{{ query }} — Search{% else %}Browse Games{% endif %} · PixelScope{% endblock %}
+
+{% block extra_styles %}
+.sr-header { background:var(--surface); border-bottom:1px solid var(--border); padding:22px 28px; transition:background .3s,border-color .3s; }
+.sr-header h1 { font-size:1.2rem; font-weight:700; margin-bottom:16px; }
+.filter-bar { display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end; }
+.filter-group { display:flex; flex-direction:column; gap:5px; }
+.filter-label { font-size:.7rem; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.07em; }
+.filter-select,.filter-input { background:var(--card); border:1px solid var(--border); color:var(--text); padding:8px 12px; border-radius:7px; font-size:.82rem; outline:none; transition:border-color .2s,background .3s; min-width:130px; }
+.filter-select:focus,.filter-input:focus { border-color:var(--accent); }
+.filter-select option { background:var(--card); }
+.sr-content { padding:32px 0 64px; }
+.sr-count { font-size:.82rem; color:var(--muted); margin-bottom:20px; }
+.load-more-wrap { text-align:center; margin-top:36px; }
+.empty-state { text-align:center; padding:80px 20px; }
+.empty-state .icon { font-size:3.5rem; margin-bottom:16px; }
+.empty-state h2 { font-size:1.1rem; font-weight:700; margin-bottom:8px; }
+.empty-state p { color:var(--muted); font-size:.9rem; }
+{% endblock %}
+
+{% block content %}
+<div class="sr-header">
+  <h1>{% if query %}Results for &ldquo;{{ query }}&rdquo;{% else %}Browse Games{% endif %}</h1>
+  <form class="filter-bar" method="get" action="/search">
+    <input type="hidden" name="q" value="{{ query }}">
+    <div class="filter-group">
+      <span class="filter-label">Genre</span>
+      <select name="genre" class="filter-select">
+        <option value="">All Genres</option>
+        {% for val,label in [('action','Action'),('rpg','RPG'),('shooter','Shooter'),('adventure','Adventure'),('strategy','Strategy'),('simulation','Simulation'),('sports','Sports'),('racing','Racing'),('puzzle','Puzzle'),('indie','Indie')] %}
+        <option value="{{ val }}" {% if filters.genre == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Platform</span>
+      <select name="platform" class="filter-select">
+        <option value="">All Platforms</option>
+        {% for val,label in [('pc','PC'),('ps5','PS5'),('ps4','PS4'),('xbox-series','Xbox Series X'),('xbox-one','Xbox One'),('switch','Nintendo Switch')] %}
+        <option value="{{ val }}" {% if filters.platform == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Year</span>
+      <input type="number" name="year" class="filter-input" placeholder="e.g. 2024" value="{{ filters.year }}" min="1990" max="2026" style="max-width:110px;">
+    </div>
+    <div class="filter-group">
+      <span class="filter-label">Min Rating</span>
+      <select name="min_rating" class="filter-select" style="min-width:110px;">
+        <option value="">Any</option>
+        {% for val,label in [('3.0','3.0+'),('3.5','3.5+'),('4.0','4.0+'),('4.5','4.5+')] %}
+        <option value="{{ val }}" {% if filters.min_rating == val %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <button type="submit" class="btn btn-primary" style="align-self:flex-end;">Apply</button>
+    <a href="/search{% if query %}?q={{ query|urlencode }}{% endif %}" class="btn btn-ghost" style="align-self:flex-end;">Clear</a>
+  </form>
+</div>
+
+<div class="sr-content container">
+  {% if results %}
+    <p class="sr-count">{{ results|length }} game{{ 's' if results|length != 1 }} found</p>
+    <div class="grid-4" id="results-grid">
+      {% for g in results %}
+      <a class="card" href="/game/{{ g.id }}">
+        <div class="card-img">
+          {% if g.image %}<img src="{{ g.image }}" alt="{{ g.name }}" loading="lazy">
+          {% else %}<div class="card-placeholder">🎮</div>{% endif %}
+          <div class="lib-wrap">
+            <button class="lib-btn"
+              data-id="{{ g.id }}" data-name="{{ g.name|e }}"
+              data-image="{{ g.image or '' }}" data-rating="{{ g.rating or '' }}"
+              data-genres="{{ g.genres or '' }}" data-released="{{ g.released or '' }}"
+              onclick="toggleLibDrop(event,this)" title="Add to Library">+</button>
+            <div class="lib-drop">
+              <button onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,'want')">🔖 Want to Play</button>
+              <button onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,'playing')">🎮 Playing</button>
+              <button onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,'completed')">✓ Completed</button>
+              <button class="lib-remove" onclick="setLibFromCard(event,this.closest('.lib-drop').previousElementSibling,null)">✕ Remove</button>
+            </div>
+          </div>
+          <button class="heart-btn"
+            data-id="{{ g.id }}" data-name="{{ g.name|e }}"
+            data-image="{{ g.image or '' }}" data-rating="{{ g.rating or '' }}"
+            data-genres="{{ g.genres or '' }}" data-released="{{ g.released or '' }}"
+            onclick="toggleWatchlist(event,this)">♡</button>
+        </div>
+        <div class="card-body">
+          <div class="card-title">{{ g.name }}</div>
+          <div class="card-sub">
+            {%- set parts=[] -%}
+            {%- if g.released %}{% set _=parts.append(g.released) %}{% endif -%}
+            {%- if g.genres %}{% set _=parts.append(g.genres) %}{% endif -%}
+            {{ parts|join(' · ') or '&nbsp;' }}
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% if has_more %}
+    <div class="load-more-wrap">
+      <button class="btn btn-ghost" id="load-more-btn" data-page="2">Load More Games</button>
+    </div>
+    {% endif %}
+  {% else %}
+    <div class="empty-state">
+      <div class="icon">🔍</div>
+      <h2>No games found</h2>
+      <p>Try a different search term or adjust the filters above.</p>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function(){
+  const btn=document.getElementById('load-more-btn');
+  if(!btn)return;
+  const filters={{ filters|tojson }};
+  btn.addEventListener('click',function(){
+    const page=parseInt(this.dataset.page)||2;
+    this.textContent='Loading…';this.disabled=true;
+    const p=new URLSearchParams(Object.assign({},filters,{page:String(page)}));
+    fetch('/search/advanced?'+p.toString())
+      .then(r=>r.json())
+      .then(data=>{
+        const grid=document.getElementById('results-grid');
+        (data.results||[]).forEach(g=>{
+          const wrap=document.createElement('div');
+          wrap.innerHTML=mkCard(g);
+          grid.appendChild(wrap.firstElementChild);
+        });
+        initHearts();initLibBtns();
+        if(data.has_more){btn.dataset.page=String(page+1);btn.textContent='Load More Games';btn.disabled=false;}
+        else{btn.closest('.load-more-wrap').innerHTML='<p style="color:var(--muted);font-size:.85rem;margin-top:8px">All results loaded.</p>';}
+      })
+      .catch(()=>{btn.textContent='Retry';btn.disabled=false;});
+  });
+})();
+</script>
+{% endblock %}
